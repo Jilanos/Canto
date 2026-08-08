@@ -1,7 +1,7 @@
 ## req_000_mvp_local_first_pour_apprendre_la_justesse_vocale_en_mode_libre - MVP local-first pour apprendre la justesse vocale en mode libre
 > From version: 1.0.0
 > Schema version: 1.0
-> Status: Draft
+> Status: Done
 > Understanding: 90%
 > Confidence: 85%
 > Complexity: High

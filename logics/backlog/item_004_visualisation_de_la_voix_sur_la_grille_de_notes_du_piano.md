@@ -1,10 +1,10 @@
 ## item_004_visualisation_de_la_voix_sur_la_grille_de_notes_du_piano - Visualisation de la voix sur la grille de notes du piano
 > From version: 1.0.0
 > Schema version: 1.0
-> Status: In progress
+> Status: Done
 > Understanding: 90%
 > Confidence: 85%
-> Progress: 85%
+> Progress: 100%
 > Complexity: High
 > Theme: Visualisation pédagogique
 > Reminder: Update status/understanding/confidence/progress and linked request/task references when you edit this doc.
@@ -40,6 +40,7 @@
 - request-AC5 -> This backlog slice. Proof: AC2: Une hauteur entre deux demi-tons apparaît entre leurs centres, avec continuité visuelle de l'écart en cents.
 - request-AC6 -> This backlog slice. Proof: AC3: La trace progresse dans le temps sans axe en hertz et conserve une fenêtre récente suffisante pour observer un ajustement vocal.
 - request-AC7 -> This backlog slice. Proof: AC4: Le silence crée une interruption visible et une hauteur incertaine est distinguée d'une hauteur fiable.
+- request-AC8 -> This backlog slice. Evidence needed: Le MVP couvre uniquement le mode libre ; aucune lecture de chanson, parole synchronisée, partition ou évaluation de performance n'est incluse.
 
 # Decision framing
 - Product framing: Not needed
@@ -60,3 +61,9 @@
 # Priority
 - Priority: High — transforme l'analyse audio en retour pédagogique immédiatement lisible.
 - Rationale: Set by scaffold input or defaulted for grooming.
+
+# Tasks
+- `task_001_orchestrer_la_livraison_du_mvp_mode_libre`
+
+# Notes
+- Task `task_001_orchestrer_la_livraison_du_mvp_mode_libre` was finished via `logics-manager flow finish task` on 2026-08-08.

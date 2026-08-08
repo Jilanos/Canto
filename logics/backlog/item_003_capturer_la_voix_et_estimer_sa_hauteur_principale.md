@@ -1,10 +1,10 @@
 ## item_003_capturer_la_voix_et_estimer_sa_hauteur_principale - Capturer la voix et estimer sa hauteur principale
 > From version: 1.0.0
 > Schema version: 1.0
-> Status: In progress
+> Status: Done
 > Understanding: 90%
 > Confidence: 85%
-> Progress: 85%
+> Progress: 100%
 > Complexity: High
 > Theme: Analyse vocale locale
 > Reminder: Update status/understanding/confidence/progress and linked request/task references when you edit this doc.
@@ -38,6 +38,8 @@
 - request-AC4 -> This backlog slice. Proof: AC2: Pour un signal monophonique stable dans la plage vocale cible, l'application publie fréquence, note, octave, cents et confiance.
 - request-AC6 -> This backlog slice. Proof: AC3: Un signal insuffisant ou ambigu n'est pas présenté comme une note certaine.
 - request-AC7 -> This backlog slice. Proof: AC4: La détection s'arrête et libère les pistes média lorsque l'utilisateur coupe le microphone ou quitte la vue.
+- request-AC5 -> This backlog slice. Evidence needed: La trace vocale conserve huit secondes d'historique en remontant au-dessus du piano ; sa position horizontale reste directement alignée sur les mêmes notes que le clavier, sans axe en hertz.
+- request-AC8 -> This backlog slice. Evidence needed: Le MVP couvre uniquement le mode libre ; aucune lecture de chanson, parole synchronisée, partition ou évaluation de performance n'est incluse.
 
 # Decision framing
 - Product framing: Not needed
@@ -58,3 +60,9 @@
 # Priority
 - Priority: High — cœur technique de l'apprentissage de la justesse.
 - Rationale: Set by scaffold input or defaulted for grooming.
+
+# Tasks
+- `task_001_orchestrer_la_livraison_du_mvp_mode_libre`
+
+# Notes
+- Task `task_001_orchestrer_la_livraison_du_mvp_mode_libre` was finished via `logics-manager flow finish task` on 2026-08-08.

@@ -8,6 +8,7 @@
 > Complexity: Medium
 > Theme: Mise en page
 > Reminder: Update status/understanding/confidence/progress and linked request/task references when you edit this doc.
+> Indicators reviewed: 2026-08-08
 
 # Problem
 - La page defile : l'utilisateur ne peut pas voir le piano et la note detectee en meme temps que la trace, ce qui casse la boucle d'ajustement.
@@ -36,6 +37,9 @@
 - request-AC1 -> This backlog slice. Proof: AC1: Sur un viewport de reference en paysage mobile, en portrait mobile et sur ordinateur, piano, note detectee et trace sont visibles ensemble sans defilement.
 - request-AC2 -> This backlog slice. Proof: AC2: La zone de trace ne depasse pas une part bornee de la hauteur disponible et conserve une hauteur minimale exploitable.
 - request-AC7 -> This backlog slice. Proof: AC3: Le clavier conserve une hauteur jouable au doigt sur mobile.
+- request-AC4 -> This backlog slice. Evidence needed: La cause du decrochage est identifiee et documentee, contraintes audio reellement appliquees a l'appui, et non seulement contournee.
+- request-AC5 -> This backlog slice. Evidence needed: Un mode diagnostic permet de relire les contraintes appliquees, le niveau et la confiance sans brancher un debogueur.
+- request-AC6 -> This backlog slice. Evidence needed: Des tests automatises couvrent la regle de mise en page et la non-regression du decrochage sur un signal stationnaire long.
 
 # Decision framing
 - Product framing: Not needed

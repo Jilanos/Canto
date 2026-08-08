@@ -1,8 +1,8 @@
 ## prod_001_canto_mvp_mode_libre - Canto — MVP mode libre
 > Date: 2026-08-07
-> Status: Proposed
+> Status: Settled
 > Related request: `req_000_mvp_local_first_pour_apprendre_la_justesse_vocale_en_mode_libre`
-> Related backlog: `item_001_mettre_en_place_le_socle_pwa_local_first`, `item_002_piano_visuel_et_sonore`, `item_003_capturer_la_voix_et_estimer_sa_hauteur_principale`, `item_004_visualisation_de_la_voix_sur_la_grille_de_notes_du_piano`, `item_005_validation_de_la_boucle_d_entrainement_libre`
+> Related backlog: `item_001_mettre_en_place_le_socle_pwa_local_first`
 > Related task: `task_001_orchestrer_la_livraison_du_mvp_mode_libre`
 > Related architecture: (none yet)
 > Reminder: Update status, linked refs, scope, decisions, success signals, and open questions when you edit this doc.
@@ -102,6 +102,6 @@ flowchart LR
 - Aucune question produit bloquante restante pour cette version du corpus.
 
 # References
-- Product back-reference: `req_000_mvp_local_first_pour_apprendre_la_justesse_vocale_en_mode_libre`
+- Product back-reference: `item_001_mettre_en_place_le_socle_pwa_local_first`
 - Task back-reference: `task_001_orchestrer_la_livraison_du_mvp_mode_libre`
 - Structured corpus source: `logics/scaffold/mvp-mode-libre.json`

@@ -1,10 +1,10 @@
 ## item_001_mettre_en_place_le_socle_pwa_local_first - Mettre en place le socle PWA local-first
 > From version: 1.0.0
 > Schema version: 1.0
-> Status: In progress
+> Status: Done
 > Understanding: 90%
 > Confidence: 85%
-> Progress: 85%
+> Progress: 100%
 > Complexity: Medium
 > Theme: Plateforme PWA
 > Reminder: Update status/understanding/confidence/progress and linked request/task references when you edit this doc.
@@ -36,6 +36,11 @@
 # AC Traceability
 - request-AC1 -> This backlog slice. Proof: AC1: L'application peut être installée depuis un navigateur compatible avec un nom, une icône et un mode standalone.
 - request-AC8 -> This backlog slice. Proof: AC2: Après une première visite réussie, le mode libre se recharge sans réseau et indique clairement que les fonctions restent locales.
+- request-AC3 -> This backlog slice. Evidence needed: Après consentement explicite au microphone, l'application analyse le signal localement et n'enregistre ni ne transmet aucun audio.
+- request-AC4 -> This backlog slice. Evidence needed: Pendant que l'utilisateur chante, la fréquence fondamentale détectée est affichée en temps réel sous forme de trace et de note musicale la plus proche.
+- request-AC5 -> This backlog slice. Evidence needed: La trace vocale conserve huit secondes d'historique en remontant au-dessus du piano ; sa position horizontale reste directement alignée sur les mêmes notes que le clavier, sans axe en hertz.
+- request-AC6 -> This backlog slice. Evidence needed: Les états silence, signal trop faible, hauteur instable, microphone refusé et microphone indisponible sont compréhensibles et non bloquants.
+- request-AC7 -> This backlog slice. Evidence needed: Sur un appareil cible compatible, le retour visuel de hauteur reste suffisamment réactif pour l'entraînement, avec un objectif mesuré de 150 ms maximum hors latence matérielle non contrôlable.
 
 # Decision framing
 - Product framing: Not needed
@@ -56,3 +61,9 @@
 # Priority
 - Priority: High — prérequis à toutes les fonctionnalités du MVP et à la promesse hors ligne.
 - Rationale: Set by scaffold input or defaulted for grooming.
+
+# Tasks
+- `task_001_orchestrer_la_livraison_du_mvp_mode_libre`
+
+# Notes
+- Task `task_001_orchestrer_la_livraison_du_mvp_mode_libre` was finished via `logics-manager flow finish task` on 2026-08-08.

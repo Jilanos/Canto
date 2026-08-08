@@ -1,10 +1,10 @@
 ## item_005_validation_de_la_boucle_d_entrainement_libre - Validation de la boucle d'entrainement libre
 > From version: 1.0.0
 > Schema version: 1.0
-> Status: In progress
+> Status: Done
 > Understanding: 90%
 > Confidence: 85%
-> Progress: 85%
+> Progress: 100%
 > Complexity: High
 > Theme: Expérience MVP
 > Reminder: Update status/understanding/confidence/progress and linked request/task references when you edit this doc.
@@ -67,3 +67,9 @@
 # Priority
 - Priority: Medium — consolide les composants après livraison des capacités cœur de priorité haute.
 - Rationale: Set by scaffold input or defaulted for grooming.
+
+# Tasks
+- `task_001_orchestrer_la_livraison_du_mvp_mode_libre`
+
+# Notes
+- Task `task_001_orchestrer_la_livraison_du_mvp_mode_libre` was finished via `logics-manager flow finish task` on 2026-08-08.
