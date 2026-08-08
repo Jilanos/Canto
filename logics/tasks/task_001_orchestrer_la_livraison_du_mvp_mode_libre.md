@@ -9,6 +9,7 @@
 > Theme: Implementation delivery
 > Reminder: Update status/understanding/confidence/progress and linked request/backlog references when you edit this doc.
 > Owner: Claude Code
+> Indicators reviewed: 2026-08-08
 
 # Context
 - Orchestrer un MVP pour débutants, entièrement frontend, statique, hors ligne et déployable à la racine de `canto.paulmondou.fr`.
