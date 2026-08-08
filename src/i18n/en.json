@@ -7,7 +7,10 @@
     "updateAvailable": "A new version is ready. Reload to update.",
     "updateAction": "Reload",
     "help": "Help and privacy",
-    "close": "Close"
+    "close": "Close",
+    "emblemAlt": "Canto emblem",
+    "portal": "paulmondou.fr",
+    "portalTitle": "Go to paulmondou.fr"
   },
   "mic": {
     "start": "Enable microphone",

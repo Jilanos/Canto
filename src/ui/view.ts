@@ -20,6 +20,8 @@ const INSTRUMENT_LABEL_KEYS: Record<InstrumentId, 'piano.instrumentStudioGrand' 
 export interface AppView {
   root: HTMLElement;
   header: HTMLElement;
+  emblem: HTMLImageElement;
+  portalLink: HTMLAnchorElement;
   statusBar: HTMLElement;
   controls: HTMLElement;
   traceSection: HTMLElement;
@@ -65,7 +67,27 @@ export function renderApp(root: HTMLElement): AppView {
 
   // Header -----------------------------------------------------------------
   const header = element('header', 'app__header');
+
+  const emblem = document.createElement('img');
+  emblem.className = 'app__emblem';
+  emblem.src = '/brand/canto-emblem.svg';
+  emblem.alt = t('app.emblemAlt');
+  emblem.width = 28;
+  emblem.height = 28;
+  emblem.decoding = 'async';
+
   const title = text('h1', 'app__title', t('app.name'));
+  const brand = element('div', 'app__brand');
+  brand.append(emblem, title);
+
+  // Same window on purpose: this is the author's own portal, not an outbound link
+  // a visitor would want to keep separate from their practice session.
+  const portalLink = document.createElement('a');
+  portalLink.className = 'app__portal';
+  portalLink.href = 'https://paulmondou.fr';
+  portalLink.textContent = t('app.portal');
+  portalLink.title = t('app.portalTitle');
+  portalLink.rel = 'author';
   const offlineBadge = text('span', 'badge', t('app.offlineBadge'));
   offlineBadge.title = t('app.offlineHint');
   const helpButton = button('button button--ghost', t('app.help'));
@@ -73,8 +95,8 @@ export function renderApp(root: HTMLElement): AppView {
   const diagnosticsButton = button('button button--ghost', t('diag.toggle'));
   diagnosticsButton.setAttribute('aria-expanded', 'false');
   const headerActions = element('div', 'app__header-actions');
-  headerActions.append(offlineBadge, helpButton, diagnosticsButton);
-  header.append(title, headerActions);
+  headerActions.append(offlineBadge, helpButton, diagnosticsButton, portalLink);
+  header.append(brand, headerActions);
 
   const updateBanner = element('div', 'banner banner--hidden');
   updateBanner.setAttribute('role', 'status');
@@ -226,6 +248,8 @@ export function renderApp(root: HTMLElement): AppView {
   return {
     root,
     header,
+    emblem,
+    portalLink,
     statusBar,
     controls,
     traceSection,

@@ -19,7 +19,7 @@ COPY src ./src
 COPY scripts ./scripts
 COPY public ./public
 
-# Generates the icons, typechecks, then bundles. A type error fails the image build.
+# Typechecks then bundles. A type error fails the image build.
 RUN npm run build
 RUN printf '{"status":"ok","version":"%s"}\n' "$CANTO_VERSION" > dist/health.json
 

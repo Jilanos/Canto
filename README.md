@@ -72,7 +72,6 @@ start with `logics/INDEX.md`.
 git clone https://github.com/Jilanos/Canto.git
 cd Canto
 npm install
-npm run icons     # generate the placeholder PWA icons into public/icons/
 npm run dev       # http://localhost:5173
 ```
 
@@ -89,11 +88,11 @@ Requirements: **Node 20+** (developed on Node 24) and a browser from the
 | Command | What it does |
 | --- | --- |
 | `npm install` | Install the toolchain (Vite, TypeScript, Vitest, jsdom) |
-| `npm run icons` | Generate the placeholder PWA icons into `public/icons/` |
 | `npm run dev` | Dev server with hot reload on `http://localhost:5173` |
 | `npm test` | Run the automated suite once |
 | `npm run test:watch` | Run the suite in watch mode |
-| `npm run build` | Icons → typecheck → static bundle in `dist/` |
+| `npm run build` | Typecheck → static bundle in `dist/` |
+| `npm run brand` | Re-rasterise the PWA icons from the emblem (needs Docker; commit the PNGs) |
 | `npm run preview` | Serve `dist/` locally to exercise install and offline behaviour |
 | `docker build -t canto:local .` | Build the production image (see [Deployment](#deployment)) |
 
@@ -262,8 +261,8 @@ broken offline mode.
 ├── index.html                  App shell
 ├── public/
 │   ├── manifest.webmanifest    PWA manifest (name, icons, standalone)
-│   └── icons/                  Generated, git-ignored
-├── scripts/generate-icons.mjs  Draws and PNG-encodes the placeholder icons
+│   └── brand/                  Emblem (SVG) and the PNG sizes rasterised from it
+├── scripts/render-brand-icons.sh  Rasterises the emblem into the manifest PNG sizes
 ├── src/
 │   ├── app.ts                  Controller wiring every module together, owns the height budget
 │   ├── main.ts                 Entry point, service worker registration
@@ -459,6 +458,20 @@ is implemented here.
 
 ---
 
+## Branding
+
+The emblem lives at `public/brand/canto-emblem.svg` and is used directly as the
+SVG favicon and in the header. The manifest needs raster icons, so
+`npm run brand` rasterises it into 192, 512, maskable 512 and an Apple touch icon,
+composited on the app background — a transparent PNG would be placed on whatever
+the platform picks, and the gold rim disappears on white.
+
+Those PNGs are **committed**, not generated during the build, so neither CI nor the
+production image needs an SVG rasteriser. Re-run `npm run brand` and commit the
+result whenever the emblem changes.
+
+---
+
 ## Known gaps
 
 - **The two pianos are synthesised, not sampled.** `item_002` asks for
@@ -466,7 +479,6 @@ is implemented here.
   timbres are close cousins rather than recorded instruments. The "no runtime
   download" constraint holds either way. Replacing the synthesis with light
   samples is follow-up work that does not change the architecture contract.
-- **The PWA icons are placeholders**, drawn by `scripts/generate-icons.mjs`.
 - **Device validation is outstanding** — see [Validation](#validation).
 - **Pitch analysis runs on the main thread.** Measurements put a frame far inside
   the latency budget, so moving it to an AudioWorklet is not justified yet; the

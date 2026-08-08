@@ -540,3 +540,37 @@ body {
   float: right;
   margin: -4px -4px 4px 8px;
 }
+
+/* Brand ------------------------------------------------------------------- */
+
+.app__brand {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.app__emblem {
+  width: 28px;
+  height: 28px;
+  flex: 0 0 auto;
+}
+
+.app__portal {
+  color: var(--text-dim);
+  font-size: 0.76rem;
+  text-decoration: none;
+  border-bottom: 1px solid transparent;
+  white-space: nowrap;
+}
+
+.app__portal:hover,
+.app__portal:focus-visible {
+  color: var(--text);
+  border-bottom-color: var(--accent);
+}
+
+.app[data-compact='true'] .app__emblem {
+  width: 20px;
+  height: 20px;
+}

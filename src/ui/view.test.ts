@@ -113,6 +113,19 @@ describe('app shell', () => {
     expect(view.diagnosticsBody.querySelectorAll('dt')).toHaveLength(1);
   });
 
+  it('carries the emblem and a same-window link to the portal', () => {
+    const view = renderApp(root);
+    expect(view.emblem.getAttribute('src')).toBe('/brand/canto-emblem.svg');
+    expect(view.emblem.alt).toBe(CATALOGUE['app.emblemAlt']);
+    expect(view.header.contains(view.emblem)).toBe(true);
+
+    expect(view.portalLink.getAttribute('href')).toBe('https://paulmondou.fr');
+    expect(view.portalLink.textContent).toBe(CATALOGUE['app.portal']);
+    // Same window: no target, and therefore no need for a noopener guard.
+    expect(view.portalLink.getAttribute('target')).toBeNull();
+    expect(view.header.contains(view.portalLink)).toBe(true);
+  });
+
   it('hides the input picker until several devices are known (item_007)', () => {
     const view = renderApp(root);
     expect(view.deviceControl.hidden).toBe(true);

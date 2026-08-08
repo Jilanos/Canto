@@ -26,7 +26,16 @@ function serviceWorkerPlugin(): Plugin {
       const assets = Object.keys(bundle)
         .filter((name) => !name.endsWith('.map'))
         .map((name) => `/${name}`);
-      const precache = ['/', '/manifest.webmanifest', '/icons/icon-192.png', '/icons/icon-512.png', '/icons/maskable-512.png', ...assets];
+      const precache = [
+        '/',
+        '/manifest.webmanifest',
+        '/brand/canto-emblem.svg',
+        '/brand/icon-192.png',
+        '/brand/icon-512.png',
+        '/brand/maskable-512.png',
+        '/brand/apple-touch-icon-180.png',
+        ...assets,
+      ];
       const template = readFileSync(SW_TEMPLATE, 'utf8');
       const source = template
         .replace('__PRECACHE_MANIFEST__', JSON.stringify([...new Set(precache)], null, 2))
