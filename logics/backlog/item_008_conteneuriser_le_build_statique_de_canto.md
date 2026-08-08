@@ -1,10 +1,10 @@
 ## item_008_conteneuriser_le_build_statique_de_canto - Conteneuriser le build statique de Canto
 > From version: 0.1.0
 > Schema version: 1.0
-> Status: In progress
+> Status: Done
 > Understanding: 90%
 > Confidence: 85%
-> Progress: 95%
+> Progress: 100%
 > Complexity: Low
 > Theme: Conteneurisation
 > Reminder: Update status/understanding/confidence/progress and linked request/task references when you edit this doc.
@@ -35,6 +35,12 @@
 
 # AC Traceability
 - request-AC7 -> This backlog slice. Proof: AC1: L'image se construit depuis un checkout propre et ne contient ni sources ni dependances de developpement.
+- request-AC2 -> This backlog slice. Evidence needed: La release refuse de deployer si le commit tague n'est pas contenu dans main.
+- request-AC3 -> This backlog slice. Evidence needed: Les tests et le typage du projet passent avant toute construction d'image.
+- request-AC4 -> This backlog slice. Evidence needed: L'image est publiee dans GHCR avec le tag de release et le SHA du commit ; le deploiement utilise le tag exact, jamais latest.
+- request-AC5 -> This backlog slice. Evidence needed: Une sonde de sante valide la version deployee ; en cas d'echec, l'image precedente est retablie et la workflow echoue.
+- request-AC6 -> This backlog slice. Evidence needed: Aucun secret n'apparait dans les journaux ; les secrets SSH et de production sont rattaches a un environnement GitHub production.
+- request-AC8 -> This backlog slice. Evidence needed: La procedure de release, les secrets requis et le principe de rollback sont documentes dans le depot.
 
 # Decision framing
 - Product framing: Not needed
@@ -55,3 +61,9 @@
 # Priority
 - Priority: High
 - Rationale: Set by scaffold input or defaulted for grooming.
+
+# Tasks
+- `task_003_mettre_canto_en_production_par_release_taguee`
+
+# Notes
+- Task `task_003_mettre_canto_en_production_par_release_taguee` was finished via `logics-manager flow finish task` on 2026-08-08.

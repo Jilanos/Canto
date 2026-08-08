@@ -1,14 +1,26 @@
 ## prod_003_canto_chaine_de_release_taguee - Canto : chaine de release taguee
 > Date: 2026-08-08
-> Status: Proposed
+> Status: Settled
 > Related request: `req_002_publier_canto_en_production_par_release_taguee`
-> Related backlog: `item_008_conteneuriser_le_build_statique_de_canto`, `item_009_automatiser_la_release_taguee_vers_ghcr_et_le_vps`
+> Related backlog: `item_008_conteneuriser_le_build_statique_de_canto`
 > Related task: `task_003_mettre_canto_en_production_par_release_taguee`
 > Related architecture: (none yet)
 > Reminder: Update status, linked refs, scope, decisions, success signals, and open questions when you edit this doc.
 
 # Overview
 Passer d'un build local a une publication de production reproductible, verifiee et reversible, alignee sur le motif deja en place pour les autres applications du VPS.
+
+```mermaid
+%% logics-kind: product
+flowchart LR
+    Tag[Tag vX.Y.Z] --> Checks[Format et ancetre de main]
+    Checks --> Tests[Tests et typage]
+    Tests --> Image[Image GHCR immuable]
+    Image --> Deploy[Deploiement du tag exact]
+    Deploy --> Health[Sonde de sante versionnee]
+    Health --> Release[GitHub Release]
+    Health --> Rollback[Retour a l image precedente]
+```
 
 # Goals
 - Rendre chaque mise en production tracable a un tag et a un commit.
@@ -33,5 +45,5 @@ Passer d'un build local a une publication de production reproductible, verifiee 
 - Context-pack output can be handed to an implementation agent directly.
 
 # References
-- Product back-reference: `req_002_publier_canto_en_production_par_release_taguee`
+- Product back-reference: `item_008_conteneuriser_le_build_statique_de_canto`
 - Task back-reference: `task_003_mettre_canto_en_production_par_release_taguee`

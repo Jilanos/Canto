@@ -18,8 +18,10 @@ No account, no backend, no audio ever leaves the device.
      C3                     C4                     C5
 ```
 
-Status: **MVP free-practice mode**, feature-complete and covered by automated
-tests; validation on the target devices is still outstanding (see
+**Live at [canto.paulmondou.fr](https://canto.paulmondou.fr)** — v1.0.0.
+
+Status: **MVP free-practice mode**, in production and covered by automated tests.
+Validation on the full target-device matrix is still outstanding (see
 [Validation](#validation)). Workflow docs live under `logics/` (in French) —
 start with `logics/INDEX.md`.
 

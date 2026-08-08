@@ -6,9 +6,23 @@
 > Related task: `task_002_traiter_les_retours_du_premier_essai_du_mode_libre`
 > Related architecture: (none yet)
 > Reminder: Update status, linked refs, scope, decisions, success signals, and open questions when you edit this doc.
+> Indicators reviewed: 2026-08-08
 
 # Overview
 Rendre la boucle jouer, chanter, ajuster reellement praticable : tout tient dans un ecran et la detection ne lache pas une note tenue.
+
+```mermaid
+%% logics-kind: product
+flowchart TB
+    Essai[Premier essai utilisateur] --> Ecran[Defaut: la page defile]
+    Essai --> Note[Defaut: la note tenue decroche]
+    Ecran --> Budget[Budget de hauteur mesure]
+    Budget --> Boucle[Piano, note et trace visibles ensemble]
+    Note --> Seuils[Seuils asymetriques et grace courte]
+    Note --> Diag[Diagnostic de capture observable]
+    Seuils --> Boucle
+    Diag --> Boucle
+```
 
 # Goals
 - Supprimer le defilement entre le piano et le retour visuel de hauteur.

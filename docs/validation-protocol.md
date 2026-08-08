@@ -145,5 +145,12 @@ Then sing the same notes and confirm the reading is stable within a semitone.
 | | | Firefox desktop | | | | | not run | |
 | | | Firefox Android | | | | | not run | |
 
-Section 1 was run on the development machine and passes (91 automated checks).
+Section 1 passes in CI on every push (111 automated checks).
+
+Production hosting was verified on 2026-08-08 against https://canto.paulmondou.fr
+after the v1.0.0 release: health payload carrying the deployed version, app shell,
+`Permissions-Policy: microphone=(self)` on this site only, service worker never
+cached, manifest MIME type, immutable hashed assets, deep-link fallback, icons,
+HSTS and the shared Content-Security-Policy.
+
 Sections 2.1–2.8 require the target devices and are outstanding.

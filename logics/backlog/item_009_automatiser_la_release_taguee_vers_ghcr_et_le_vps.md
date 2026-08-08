@@ -1,13 +1,14 @@
 ## item_009_automatiser_la_release_taguee_vers_ghcr_et_le_vps - Automatiser la release taguee vers GHCR et le VPS
 > From version: 0.1.0
 > Schema version: 1.0
-> Status: In progress
+> Status: Done
 > Understanding: 90%
 > Confidence: 85%
-> Progress: 95%
+> Progress: 100%
 > Complexity: Medium
 > Theme: Integration continue
 > Reminder: Update status/understanding/confidence/progress and linked request/task references when you edit this doc.
+> Indicators reviewed: 2026-08-08
 
 # Problem
 - Aucune chaine automatisee ne relie un tag a une version deployee et verifiee en production.
@@ -45,6 +46,7 @@
 - request-AC5 -> This backlog slice. Proof: AC5: L'echec de la sonde de sante declenche le retablissement de l'image precedente et fait echouer la workflow.
 - request-AC6 -> This backlog slice. Proof: AC6: Aucun secret n'est imprime dans les journaux.
 - request-AC8 -> This backlog slice. Proof: AC8: La documentation decrit la commande de release, les secrets a creer et le principe de rollback.
+- request-AC7 -> This backlog slice. Evidence needed: L'image sert les fichiers statiques avec les bons types MIME, un repli sur index.html et une politique de cache qui laisse sw.js se renouveler.
 
 # Decision framing
 - Product framing: Not needed
@@ -65,3 +67,9 @@
 # Priority
 - Priority: High
 - Rationale: Set by scaffold input or defaulted for grooming.
+
+# Tasks
+- `task_003_mettre_canto_en_production_par_release_taguee`
+
+# Notes
+- Task `task_003_mettre_canto_en_production_par_release_taguee` was finished via `logics-manager flow finish task` on 2026-08-08.
