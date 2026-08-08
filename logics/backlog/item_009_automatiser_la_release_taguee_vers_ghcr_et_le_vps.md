@@ -1,10 +1,10 @@
 ## item_009_automatiser_la_release_taguee_vers_ghcr_et_le_vps - Automatiser la release taguee vers GHCR et le VPS
 > From version: 0.1.0
 > Schema version: 1.0
-> Status: Ready
+> Status: In progress
 > Understanding: 90%
 > Confidence: 85%
-> Progress: 0%
+> Progress: 80%
 > Complexity: Medium
 > Theme: Integration continue
 > Reminder: Update status/understanding/confidence/progress and linked request/task references when you edit this doc.

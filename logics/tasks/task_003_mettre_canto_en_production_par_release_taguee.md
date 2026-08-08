@@ -1,13 +1,14 @@
 ## task_003_mettre_canto_en_production_par_release_taguee - Mettre Canto en production par release taguee
 > From version: 0.1.0
 > Schema version: 1.0
-> Status: Ready
+> Status: In progress
 > Understanding: 90%
 > Confidence: 85%
-> Progress: 0%
+> Progress: 80%
 > Complexity: Medium
 > Theme: Implementation delivery
 > Reminder: Update status/understanding/confidence/progress and linked request/backlog references when you edit this doc.
+> Owner: Claude Code
 
 # Context
 - Orchestrate the scaffolded request chain and keep sibling implementation slices linked.
@@ -38,10 +39,27 @@
 - request-AC8 -> (unclaimed). No backlog slice declares this criterion.
 
 # Validation
-- (no validation recorded yet)
+- 2026-08-08 `docker build` : image construite depuis un checkout propre. Etage de construction Node 20 puis nginx non privilegie ; aucune source ni dependance de developpement dans l'image finale.
+- 2026-08-08 Conteneur execute exactement comme en production, `--read-only --cap-drop ALL --security-opt no-new-privileges` avec tmpfs : demarre, sert, et `docker inspect` le rapporte `healthy` apres la periode de demarrage.
+- 2026-08-08 Contrat d'hebergement verifie sur le conteneur : `/` en 200 `text/html` avec `Cache-Control: no-cache` ; `/manifest.webmanifest` en `application/manifest+json` ; `/sw.js` en `no-cache, no-store, must-revalidate` avec `Service-Worker-Allowed: /` ; `/assets/*` en `immutable` un an ; lien profond inconnu replie sur l'app en 200 ; icones en `image/png` ; cartes de sources en 404.
+- 2026-08-08 `/health` renvoie `{"status":"ok","version":"v0.0.0-test"}` : la version passee en argument de construction est bien embarquee, ce qui rend la sonde de deploiement incapable d'etre satisfaite par le conteneur remplace.
+- 2026-08-08 Les verifications exactes de la workflow CI ont ete rejouees en local contre le conteneur : toutes passent.
+- 2026-08-08 YAML des deux workflows analyse sans erreur. Garde-fous simules : `v1.2.3` et `v10.0.11` acceptes, `v1.2`, `1.2.3` et `v1.2.3-rc1` refuses ; le motif d'image de `deploy-image.sh` accepte `:v1.2.3` et refuse `:latest` comme `:sha-...`.
+- 2026-08-08 `npm test` : 111 tests passants. `npm run build` : bundle statique inchange.
+- Non execute : aucune release reelle, aucun deploiement reel. La chaine n'a jamais ete declenchee, conformement a la consigne de ne pas publier sans instruction explicite.
+- Prerequis non satisfaits cote GitHub : environnement `production`, secrets SSH et ruleset sur `v*` restent a creer par le proprietaire du depot.
+- Dependance : l'hebergement lui-meme, service Compose, bloc Caddy, DNS et derogation microphone, appartient a `req_004_heberger_canto_sur_canto_paulmondou_fr` dans `infra-paulmondou`.
 
 # Report
-- Not started.
+- Conteneurisation : `Dockerfile` en deux etages. Le premier construit le bundle avec Node 20 et echoue sur une erreur de typage ; le second est un nginx non privilegie qui ne sert que des fichiers. Les entrees de construction sont nommees une par une plutot que copiees en bloc, pour qu'un fichier sans rapport ne change pas silencieusement l'artefact publie.
+- La charge utile de sante est produite dans l'etage de construction : la racine documentaire du conteneur non privilegie n'est pas inscriptible, ce qui a d'ailleurs fait echouer la premiere version de l'image.
+- `nginx.conf` porte le contrat d'hebergement qui compte pour une PWA : `sw.js` jamais mis en cache, coquille d'application revalidee, ressources hachees immuables, type MIME du manifeste declare explicitement car absent de `mime.types`, repli sur la coquille pour les liens profonds, cartes de sources refusees.
+- `/health` renvoie la version embarquee a la construction. Combine au script partage du VPS, cela ferme un trou reel : une sonde de sante qui repond alors que l'ancien conteneur tourne encore ferait passer un deploiement rate pour un succes.
+- Release : `.github/workflows/release.yml` suit la consigne `GITHUB_TAG_RELEASE.md`. Tag strictement `vX.Y.Z`, commit obligatoirement ancetre de `main`, tests et typage avant toute construction, image publiee dans GHCR avec tag et SHA, provenance et SBOM, deploiement du tag exact via `scripts/deploy-image.sh`, rollback automatique sur echec de sante, GitHub Release apres succes, puis un resume de workflow.
+- CI : `.github/workflows/ci.yml` verifie sur `main` et chaque pull request le typage, les tests, puis construit l'image et verifie le contrat d'hebergement contre un conteneur reel. Une regression de `nginx.conf` echoue donc en CI et non pendant une release.
+- Documentation : le README decrit la commande de release, la chaine declenchee etape par etape, le rollback par redeploiement du tag precedent, les secrets et l'environnement GitHub a creer, et le fait que sans ruleset sur `v*` tout collaborateur peut declencher une mise en production.
+- Signale a l'equipe infrastructure : la politique commune du Caddyfile interdit le microphone sur tous les sites ; sans derogation ciblee, Canto se chargera parfaitement et n'entendra rien.
+- Reste a faire : creer l'environnement et les secrets GitHub, poser le ruleset `v*`, attendre la livraison de `req_004` cote infrastructure, puis realiser la premiere release reelle sur instruction explicite.
 
 # AI Context
 - Summary: Mettre Canto en production par release taguee

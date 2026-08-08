@@ -1,0 +1,126 @@
+name: Release by tag
+
+# A tag is the only way to reach production. The tag must be well formed, its commit
+# must already be on main, the suite must pass, and the deployed image must answer
+# with its own version before the release is published.
+
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write
+  packages: write
+
+env:
+  IMAGE: ghcr.io/jilanos/canto
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - name: Validate release tag and main ancestry
+        shell: bash
+        run: |
+          set -euo pipefail
+          [[ "$GITHUB_REF_NAME" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]
+          git fetch origin main --no-tags
+          git merge-base --is-ancestor "$GITHUB_SHA" origin/main
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      # Typecheck and bundle, then the unit suite: nothing is published before both.
+      - run: npm run build
+      - run: npm test
+
+  publish:
+    needs: validate
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/metadata-action@v5
+        id: meta
+        with:
+          images: ${{ env.IMAGE }}
+          tags: |
+            type=raw,value=${{ github.ref_name }}
+            type=sha,format=long
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          # The version is baked into /health so the deployment probe cannot be
+          # satisfied by the container this release is replacing.
+          build-args: |
+            CANTO_VERSION=${{ github.ref_name }}
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          provenance: true
+          sbom: true
+
+  deploy:
+    needs: publish
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      # deploy-image.sh resolves the immutable digest, swaps the service, waits for
+      # the health payload to carry this exact version, and restores the previous
+      # image if it does not.
+      - name: Deploy exact image and verify public health
+        uses: appleboy/ssh-action@v1.2.2
+        env:
+          GHCR_USERNAME: ${{ github.actor }}
+          GHCR_TOKEN: ${{ github.token }}
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          port: ${{ secrets.VPS_SSH_PORT || 22 }}
+          envs: GHCR_USERNAME,GHCR_TOKEN
+          script: |
+            set -euo pipefail
+            cd /home/deploy/paulmondou-infra
+            ./scripts/deploy-image.sh canto '${{ env.IMAGE }}:${{ github.ref_name }}' 'https://canto.paulmondou.fr/health' CANTO_IMAGE CANTO_VERSION
+
+  release:
+    needs: deploy
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: softprops/action-gh-release@v2
+        with:
+          generate_release_notes: true
+
+  summary:
+    needs: [publish, deploy, release]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Write the release summary
+        shell: bash
+        run: |
+          {
+            echo "## Canto release ${GITHUB_REF_NAME}"
+            echo
+            echo "| Field | Value |"
+            echo "| --- | --- |"
+            echo "| Tag | \`${GITHUB_REF_NAME}\` |"
+            echo "| Commit | \`${GITHUB_SHA}\` |"
+            echo "| Image | \`${IMAGE}:${GITHUB_REF_NAME}\` |"
+            echo "| Compose service | \`canto\` |"
+            echo "| Health URL | https://canto.paulmondou.fr/health |"
+            echo "| Publish | ${{ needs.publish.result }} |"
+            echo "| Deploy | ${{ needs.deploy.result }} |"
+            echo "| Release | ${{ needs.release.result }} |"
+          } >> "$GITHUB_STEP_SUMMARY"

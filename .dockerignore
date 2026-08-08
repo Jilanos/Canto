@@ -1,0 +1,10 @@
+.git
+.github
+node_modules
+dist
+docs
+logics
+public/icons
+README.md
+AGENTS.md
+LOGICS.md

@@ -1,0 +1,54 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  quality:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      # npm run build runs the icon generator and the typecheck before bundling, so
+      # this covers both. npm test is the unit suite.
+      - run: npm run build
+      - run: npm test
+
+      # The image is what actually ships; a broken Dockerfile or nginx config must
+      # fail here rather than during a release.
+      - run: docker build --build-arg CANTO_VERSION=ci --tag canto:ci .
+      - run: docker run --rm -d --name canto-ci --read-only --tmpfs /tmp --tmpfs /var/cache/nginx --tmpfs /var/run -p 18080:8080 canto:ci
+      # --retry-all-errors is needed because nginx binds the port slightly before it
+      # serves: a plain retry would race the container instead of waiting for it.
+      - name: Probe the health endpoint
+        run: >-
+          curl --fail --silent --show-error
+          --retry 10 --retry-delay 1 --retry-all-errors --retry-connrefused
+          --connect-timeout 5 --max-time 15
+          http://127.0.0.1:18080/health
+
+      # The PWA contract lives in these three responses: an app shell that is always
+      # revalidated, a manifest with its own MIME type, and a service worker that is
+      # never cached. Getting any of them wrong strands installed visitors on an old
+      # version, which is invisible until someone complains.
+      - name: Check the static hosting contract
+        run: |
+          set -euo pipefail
+          curl --fail --silent --show-error --max-time 5 -o /dev/null http://127.0.0.1:18080/
+          curl --silent --show-error --max-time 5 -o /dev/null -w '%{content_type}' \
+            http://127.0.0.1:18080/manifest.webmanifest | grep -Fq 'application/manifest+json'
+          curl --silent --show-error --max-time 5 -D - -o /dev/null http://127.0.0.1:18080/sw.js \
+            | grep -iq 'cache-control: no-cache, no-store'
+          test "$(curl --silent --max-time 5 -o /dev/null -w '%{http_code}' http://127.0.0.1:18080/deep/link)" = 200
+
+      - if: always()
+        run: docker stop canto-ci || true

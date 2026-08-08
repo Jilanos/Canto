@@ -37,6 +37,7 @@ start with `logics/INDEX.md`.
 - [Testing](#testing)
 - [Validation](#validation)
 - [Deployment](#deployment)
+- [Releasing](#releasing)
 - [Browser support](#browser-support)
 - [Out of scope](#out-of-scope)
 - [Known gaps](#known-gaps)
@@ -92,6 +93,7 @@ Requirements: **Node 20+** (developed on Node 24) and a browser from the
 | `npm run test:watch` | Run the suite in watch mode |
 | `npm run build` | Icons → typecheck → static bundle in `dist/` |
 | `npm run preview` | Serve `dist/` locally to exercise install and offline behaviour |
+| `docker build -t canto:local .` | Build the production image (see [Deployment](#deployment)) |
 
 The service worker is registered **only in a production build**, so `npm run dev`
 never serves stale modules. To test offline behaviour, use
@@ -252,6 +254,9 @@ broken offline mode.
 │   ├── styles/app.css          Whole stylesheet
 │   ├── ui/                     Piano keyboard, app shell markup, height budget
 │   └── i18n/en.json            Every visible string
+├── Dockerfile                  Static build stage + unprivileged nginx runtime
+├── nginx.conf                  Hosting contract: MIME types, cache rules, fallback, health
+├── .github/workflows/          CI on main and PRs, release on vX.Y.Z tags
 ├── docs/validation-protocol.md Device validation procedure
 └── logics/                     Workflow docs: request, product, ADR, backlog, task
 ```
@@ -307,21 +312,99 @@ not been published to the production domain.
 
 ## Deployment
 
-`npm run build` produces a purely static `dist/` (≈196 KB, of which 34 KB of
-JavaScript, 11 KB gzipped) intended for the **root** of
+`npm run build` produces a purely static `dist/` intended for the **root** of
 `https://canto.paulmondou.fr` — `base: '/'` in `vite.config.ts`.
 
-Publish the contents of `dist/` at the domain root, and make sure the host:
+In production that bundle ships inside a small image: `Dockerfile` builds it and
+serves it with an unprivileged nginx configured by `nginx.conf`. The container runs
+read-only, drops all capabilities and exposes only port 8080 to the reverse proxy.
 
-- serves over **HTTPS** — required for microphone capture and installation;
-- serves `manifest.webmanifest` as `application/manifest+json` and `sw.js` as
-  `text/javascript`, both from the root scope;
-- falls back to `/index.html` for unknown paths;
-- does **not** cache `sw.js` long-term, so updates can roll out.
+The hosting contract that config exists to hold:
+
+| Requirement | Why |
+| --- | --- |
+| **HTTPS** | Microphone capture and installation both need a secure context |
+| `manifest.webmanifest` as `application/manifest+json` | Not in every nginx `mime.types` |
+| `sw.js` never cached | The service worker is the only thing that can pull a new version |
+| `index.html` revalidated | Otherwise an installed visitor keeps an old shell |
+| `/assets/*` immutable | Hashed filenames, safe to cache for a year |
+| Fallback to `/index.html` | Deep links must work, including offline |
+| `/health` returns the built version | So a release probe cannot be satisfied by the container it replaces |
 
 No server-side runtime, environment variable or API key is involved. When a new
 version is deployed, the running app shows a *"A new version is ready"* banner
 instead of swapping itself out mid-exercise.
+
+The reverse proxy, the Compose service and the DNS record live in the
+`infra-paulmondou` repository. One thing to check there: the shared Caddy policy
+sends `Permissions-Policy: microphone=()` to every site. Canto needs a targeted
+exception, or it loads perfectly and cannot hear anything.
+
+To run the production image locally:
+
+```bash
+docker build --build-arg CANTO_VERSION=v0.0.0-local -t canto:local .
+docker run --rm -p 8099:8080 --read-only \
+  --tmpfs /tmp --tmpfs /var/cache/nginx --tmpfs /var/run canto:local
+# http://localhost:8099 — note the microphone needs HTTPS or localhost
+```
+
+---
+
+## Releasing
+
+Production is reached **only** by pushing a tag. Nothing deploys from `main`.
+
+```bash
+git tag v1.2.3
+git push origin v1.2.3
+```
+
+What that triggers, in order — any failing step stops the release:
+
+1. **Validate** — the tag must match `vX.Y.Z` exactly, and its commit must already
+   be an ancestor of `origin/main`. Then `npm run build` (icons, typecheck, bundle)
+   and `npm test`.
+2. **Publish** — the image is built with `CANTO_VERSION` baked in and pushed to
+   `ghcr.io/jilanos/canto`, tagged with both the release tag and the full commit
+   SHA, with provenance and an SBOM.
+3. **Deploy** — over SSH, the shared `scripts/deploy-image.sh` on the VPS resolves
+   the image to an immutable digest, swaps the `canto` service, and waits for
+   `https://canto.paulmondou.fr/health` to answer **with this exact version**.
+   If it does not, the previous image is restored and the workflow fails.
+4. **Release** — a GitHub Release is created with generated notes, then a job
+   summary records tag, commit, image, service, health URL and each step's result.
+
+### Rollback
+
+Roll back by redeploying the previous release tag: the images are immutable and
+kept in GHCR, so recovery never depends on the current state of `main` or on a
+`latest` tag. On the VPS:
+
+```bash
+cd /home/deploy/paulmondou-infra
+./scripts/deploy-image.sh canto ghcr.io/jilanos/canto:v1.2.2 \
+  https://canto.paulmondou.fr/health CANTO_IMAGE CANTO_VERSION
+```
+
+### Required GitHub configuration
+
+| What | Value |
+| --- | --- |
+| Environment | `production` — carries the SSH secrets, and can require manual approval |
+| Secret `VPS_HOST` | VPS hostname |
+| Secret `VPS_USER` | Deploy user |
+| Secret `VPS_SSH_KEY` | Private key for that user |
+| Secret `VPS_SSH_PORT` | Optional, defaults to 22 |
+| Ruleset on `v*` | Restrict tag creation, update and deletion to the owner or a release app |
+
+`GITHUB_TOKEN` covers the GHCR push; no personal access token is needed. Without
+the `v*` ruleset, anyone with write access can trigger a production deployment by
+pushing a tag.
+
+CI runs on every push to `main` and every pull request: build, typecheck, unit
+tests, then it builds the image and asserts the hosting contract above against a
+running container.
 
 ---
 

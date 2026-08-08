@@ -1,10 +1,10 @@
 ## item_008_conteneuriser_le_build_statique_de_canto - Conteneuriser le build statique de Canto
 > From version: 0.1.0
 > Schema version: 1.0
-> Status: Ready
+> Status: In progress
 > Understanding: 90%
 > Confidence: 85%
-> Progress: 0%
+> Progress: 80%
 > Complexity: Low
 > Theme: Conteneurisation
 > Reminder: Update status/understanding/confidence/progress and linked request/task references when you edit this doc.
