@@ -1,0 +1,237 @@
+{
+  "title": "MVP local-first pour apprendre la justesse vocale en mode libre",
+  "references": [
+    "Demande produit initiale du 7 août 2026"
+  ],
+  "request": {
+    "complexity": "High",
+    "theme": "MVP mode libre",
+    "needs": [
+      "Entendre une note de référence en jouant sur un piano visuel.",
+      "Voir en temps réel la hauteur principale de sa voix par rapport aux notes du piano.",
+      "Choisir entre Studio Grand, Soft Piano et Warm Organ, ce dernier étant plus proche d'un son vocal tenu.",
+      "S'exercer sans compte, sans serveur et sans envoyer l'audio hors de l'appareil.",
+      "Installer l'application comme une PWA et pouvoir l'utiliser hors ligne après son premier chargement."
+    ],
+    "context": [
+      "Le produit vise à terme un mode chansons de type karaoké, explicitement exclu du MVP.",
+      "La visualisation demandée est organisée par notes de musique et non par une échelle fréquentielle brute.",
+      "Le terme spectrogramme désigne ici une trace temporelle de l'énergie vocale et de la fréquence fondamentale alignée sur des lignes de notes.",
+      "La hauteur se lit horizontalement au-dessus des touches et l'historique temporel remonte verticalement pendant huit secondes.",
+      "Le traitement du microphone, la synthèse audio et le rendu sont entièrement réalisés dans le navigateur, sans backend.",
+      "L'interface initiale est uniquement en anglais et vise Chrome sur Android, Firefox desktop et Firefox Android.",
+      "Le build statique est destiné à la racine HTTPS de canto.paulmondou.fr."
+    ],
+    "acceptance_criteria": [
+      "AC1: L'utilisateur peut ouvrir une PWA responsive entièrement statique, l'installer, retrouver le mode libre hors ligne et la déployer à la racine de canto.paulmondou.fr sans backend.",
+      "AC2: L'utilisateur peut jouer des notes distinctes depuis un piano visuel avec la souris, le tactile et un clavier physique documenté, puis choisir Studio Grand, Soft Piano ou Warm Organ.",
+      "AC3: Après consentement explicite au microphone, l'application analyse le signal localement et n'enregistre ni ne transmet aucun audio.",
+      "AC4: Pendant que l'utilisateur chante, la fréquence fondamentale détectée est affichée en temps réel sous forme de trace et de note musicale la plus proche.",
+      "AC5: La trace vocale conserve huit secondes d'historique en remontant au-dessus du piano ; sa position horizontale reste directement alignée sur les mêmes notes que le clavier, sans axe en hertz.",
+      "AC6: Les états silence, signal trop faible, hauteur instable, microphone refusé et microphone indisponible sont compréhensibles et non bloquants.",
+      "AC7: Sur un appareil cible compatible, le retour visuel de hauteur reste suffisamment réactif pour l'entraînement, avec un objectif mesuré de 150 ms maximum hors latence matérielle non contrôlable.",
+      "AC8: Le MVP couvre uniquement le mode libre ; aucune lecture de chanson, parole synchronisée, partition ou évaluation de performance n'est incluse."
+    ]
+  },
+  "product": {
+    "title": "Canto — MVP mode libre",
+    "overview": "Une PWA locale qui aide à entendre une note puis à visualiser immédiatement la justesse de sa voix sur un repère musical partagé avec un piano.",
+    "goals": [
+      "Rendre la relation entre sensation vocale, note entendue et hauteur chantée immédiatement visible.",
+      "Offrir une boucle d'entraînement courte : jouer, écouter, chanter, ajuster.",
+      "Permettre d'explorer plusieurs couleurs de piano et un orgue pour choisir une référence sonore adaptée.",
+      "Garantir une expérience privée, sans compte et fonctionnelle hors ligne.",
+      "Poser une architecture audio et visuelle réutilisable par un futur mode chansons."
+    ],
+    "non_goals": [
+      "Mode chansons, karaoké, paroles ou accompagnement musical.",
+      "Catalogue de morceaux, import de fichiers ou streaming.",
+      "Notation de la performance, coaching automatique ou historique de progression.",
+      "Reconnaissance des paroles, timbre, vibrato, volume ou qualité vocale avancée.",
+      "Comptes, synchronisation cloud, backend ou collecte analytique.",
+      "Tutoriel, exercice guidé ou contenu pédagogique imposé.",
+      "Enregistrement, export ou partage de la voix."
+    ]
+  },
+  "backlog_items": [
+    {
+      "title": "Mettre en place le socle PWA local-first",
+      "priority": "High — prérequis à toutes les fonctionnalités du MVP et à la promesse hors ligne.",
+      "complexity": "Medium",
+      "theme": "Plateforme PWA",
+      "request_acs": ["AC1", "AC8"],
+      "problem": [
+        "Le projet ne possède encore ni application web, ni contrat d'installation, ni stratégie hors ligne."
+      ],
+      "scope_in": [
+        "Application web responsive mono-écran centrée sur le mode libre.",
+        "Manifest PWA, icônes temporaires, service worker et cache des ressources nécessaires.",
+        "État d'installation et comportement hors ligne après premier chargement.",
+        "Interface initiale uniquement en anglais, structurée par clés sémantiques.",
+        "Build frontend entièrement statique destiné à la racine HTTPS de canto.paulmondou.fr.",
+        "HTTPS en production et localhost en développement pour l'accès au microphone.",
+        "Orientation paysage recommandée et optimisée sur mobile, avec portrait restant utilisable."
+      ],
+      "scope_out": [
+        "Backend, compte utilisateur et synchronisation distante.",
+        "Mode chansons et navigation multi-mode finalisée."
+      ],
+      "acceptance_criteria": [
+        "AC1: Canto peut être installée depuis un navigateur compatible avec son nom, son icône et un mode standalone.",
+        "AC2: Après une première visite réussie, le mode libre se recharge sans réseau et indique clairement que les fonctions restent locales.",
+        "AC3: La mise en page privilégie le paysage sur mobile, reste utilisable en portrait et fonctionne sur ordinateur.",
+        "AC4: L'application ne dépend d'aucun service distant pendant l'exercice.",
+        "AC5: Le build statique peut être publié à la racine de canto.paulmondou.fr.",
+        "AC6: Tous les textes visibles du MVP proviennent du catalogue source anglais."
+      ]
+    },
+    {
+      "title": "Piano visuel et sonore",
+      "priority": "High — fournit la référence sonore et le repère musical commun à la voix.",
+      "complexity": "Medium",
+      "theme": "Instrument de référence",
+      "request_acs": ["AC2"],
+      "problem": [
+        "L'utilisateur a besoin d'une note de référence immédiate et identifiable avant de chanter."
+      ],
+      "scope_in": [
+        "Clavier de piano visuel avec touches blanches et noires, libellés de notes et état de touche active.",
+        "Lecture polyphonique de notes accordées à A4 = 440 Hz dans le MVP.",
+        "Sélecteur proposant Studio Grand, Soft Piano et Warm Organ, tous disponibles hors ligne.",
+        "Ressources légères embarquées pour les deux pianos et synthèse locale pour l'orgue.",
+        "Interactions souris, tactiles et clavier physique avec prévention des notes bloquées.",
+        "Son maintenu tant que la touche est pressée, puis léger fondu au relâchement, sans téléchargement réseau requis."
+      ],
+      "scope_out": [
+        "Pédale de sustain, vélocité MIDI, périphériques MIDI et simulation acoustique avancée.",
+        "Séquenceur, métronome et enregistrement du jeu."
+      ],
+      "acceptance_criteria": [
+        "AC1: Chaque touche visible déclenche la note attendue et montre son état actif pendant l'interaction.",
+        "AC2: Plusieurs notes peuvent sonner simultanément sans coupure d'une note déjà tenue.",
+        "AC3: Les interactions pointer, tactiles et clavier se terminent proprement même si le pointeur quitte une touche ou si la fenêtre perd le focus.",
+        "AC4: Le clavier expose les noms de notes aux technologies d'assistance et dispose d'une commande de coupure immédiate du son.",
+        "AC5: Le son fonctionne hors ligne après le chargement initial de la PWA.",
+        "AC6: L'utilisateur peut choisir Studio Grand, Soft Piano ou Warm Organ sans interrompre l'exercice.",
+        "AC7: Une note reste active pendant le maintien de la touche et s'éteint avec un fondu court au relâchement.",
+        "AC8: Les deux pianos utilisent uniquement des ressources légères embarquées et l'orgue est synthétisé localement, sans téléchargement à l'exécution."
+      ]
+    },
+    {
+      "title": "Capturer la voix et estimer sa hauteur principale",
+      "priority": "High — cœur technique de l'apprentissage de la justesse.",
+      "complexity": "High",
+      "theme": "Analyse vocale locale",
+      "request_acs": ["AC3", "AC4", "AC6", "AC7"],
+      "problem": [
+        "Le navigateur doit isoler une fréquence fondamentale vocale fiable malgré le silence, le bruit et les harmoniques."
+      ],
+      "scope_in": [
+        "Demande explicite d'autorisation microphone déclenchée par une action utilisateur.",
+        "Traitement audio local en temps réel, sans conservation ni transfert du flux.",
+        "Estimation de fréquence fondamentale adaptée à une voix monophonique, avec score de confiance et lissage limité.",
+        "Analyse couvrant C2 à C6 et conversion vers la note tempérée la plus proche sur une base A4 = 440 Hz.",
+        "Calcul interne de l'écart en cents pour positionner et qualifier la trace, sans imposer sa valeur numérique dans l'interface.",
+        "Détection des états silence, volume insuffisant, hauteur non fiable et entrée audio interrompue."
+      ],
+      "scope_out": [
+        "Polyphonie vocale, séparation de sources et suppression musicale avancée.",
+        "Reconnaissance du timbre, des phonèmes ou des paroles.",
+        "Stockage de buffers audio ou téléversement de la voix."
+      ],
+      "acceptance_criteria": [
+        "AC1: Le microphone n'est activé qu'après une action et un message expliquant le traitement local.",
+        "AC2: Pour un signal monophonique stable dans la plage vocale cible, l'application publie fréquence, note, octave, cents et confiance.",
+        "AC3: Un signal insuffisant ou ambigu n'est pas présenté comme une note certaine.",
+        "AC4: La détection s'arrête et libère les pistes média lorsque l'utilisateur coupe le microphone ou quitte la vue.",
+        "AC5: Les refus, absences de périphérique et interruptions affichent une marche à suivre sans faire planter l'application.",
+        "AC6: Un protocole reproductible mesure précision et latence sur des signaux synthétiques et des appareils cibles."
+      ]
+    },
+    {
+      "title": "Visualisation de la voix sur la grille de notes du piano",
+      "priority": "High — transforme l'analyse audio en retour pédagogique immédiatement lisible.",
+      "complexity": "High",
+      "theme": "Visualisation pédagogique",
+      "request_acs": ["AC4", "AC5", "AC6", "AC7"],
+      "problem": [
+        "Une valeur fréquentielle seule ne permet pas de relier intuitivement la voix aux touches et aux notes musicales."
+      ],
+      "scope_in": [
+        "Zone temporelle placée au-dessus du clavier : hauteur sur l'axe horizontal, présent près du piano et historique remontant verticalement.",
+        "Huit secondes d'historique visible et alignement horizontal entre la hauteur affichée et les touches du piano.",
+        "Plage analysée C2 à C6, avec deux octaves visibles et commandes de changement d'octave.",
+        "Trace dominante de la fréquence fondamentale, avec indication de stabilité ou de confiance.",
+        "Affichage instantané de la note estimée et retour coloré autour d'une zone juste de ±15 cents.",
+        "Traitement visuel distinct du silence et des estimations incertaines."
+      ],
+      "scope_out": [
+        "Axe logarithmique ou linéaire libellé en hertz.",
+        "Partition, portée musicale, paroles et notes cibles de chanson.",
+        "Analyse exhaustive du spectre, affichage des harmoniques ou mode d'intensité spectrale, réservés à une évolution ultérieure.",
+        "Indication textuelle trop haut ou trop bas et score de performance."
+      ],
+      "acceptance_criteria": [
+        "AC1: Une hauteur exactement accordée apparaît horizontalement au centre de la colonne correspondant à sa touche de piano.",
+        "AC2: Une hauteur entre deux demi-tons apparaît entre leurs centres, avec continuité visuelle et une zone juste de ±15 cents.",
+        "AC3: Le présent se dessine près du piano et la trace remonte pendant une fenêtre de huit secondes, sans axe en hertz.",
+        "AC4: Le silence crée une interruption visible et une hauteur incertaine est distinguée d'une hauteur fiable.",
+        "AC5: Le rendu reste fluide sur les appareils cibles sans perturber le pipeline audio.",
+        "AC6: Le sens de lecture, les couleurs et les états essentiels restent compréhensibles sans dépendre uniquement de la couleur."
+      ]
+    },
+    {
+      "title": "Validation de la boucle d'entrainement libre",
+      "priority": "Medium — consolide les composants après livraison des capacités cœur de priorité haute.",
+      "complexity": "High",
+      "theme": "Expérience MVP",
+      "request_acs": ["AC1", "AC2", "AC3", "AC4", "AC5", "AC6", "AC7", "AC8"],
+      "problem": [
+        "Les briques piano, microphone et visualisation doivent former une boucle d'entraînement simple, fiable et mesurable."
+      ],
+      "scope_in": [
+        "Libellés anglais concis expliquant les commandes audio et la confidentialité au moment utile, sans tutoriel ni exercice guidé.",
+        "Commandes explicites pour activer ou couper le microphone et couper le piano.",
+        "Gestion de coexistence entre sortie piano et entrée micro, avec documentation du risque de repisse acoustique.",
+        "Utilisation possible sur haut-parleur et recommandation contextuelle d'un casque lorsque la repisse dégrade la détection.",
+        "Tests automatisés des conversions musicales, du moteur de hauteur et des états UI.",
+        "Tests manuels au minimum sur Chrome Android, Firefox desktop et Firefox Android.",
+        "Persistance locale des seules préférences non sensibles : instrument, volume, plage/octave, orientation visuelle et langue future.",
+        "Direction visuelle technique, précise et proche d'un studio professionnel.",
+        "Budget de performance, accessibilité de base et documentation d'utilisation."
+      ],
+      "scope_out": [
+        "Évaluation chiffrée de l'utilisateur, gamification et sauvegarde de séances.",
+        "Mode chansons ou préparation de contenu musical sous licence."
+      ],
+      "acceptance_criteria": [
+        "AC1: Un utilisateur débutant peut accomplir directement la boucle jouer une note, chanter et ajuster, sans tutoriel obligatoire.",
+        "AC2: Le piano, la capture et la visualisation peuvent être arrêtés immédiatement et libèrent leurs ressources.",
+        "AC3: Les tests unitaires couvrent les conversions note/fréquence/cents et les seuils de validité de la hauteur.",
+        "AC4: Une validation de bout en bout documente installation, hors ligne, permissions, précision, latence et fluidité sur les appareils cibles.",
+        "AC5: Aucune requête réseau ni écriture persistante ne contient de données issues du microphone.",
+        "AC6: L'interface essentielle est utilisable au clavier, expose des libellés accessibles en anglais et ne dépend pas uniquement de la couleur.",
+        "AC7: Chrome Android, Firefox desktop et Firefox Android passent le protocole documenté, avec le paysage recommandé sur mobile.",
+        "AC8: Seules les préférences non sensibles autorisées sont persistées localement ; aucune donnée de voix, séance ou progression ne l'est.",
+        "AC9: L'exercice reste utilisable sur haut-parleur et recommande clairement un casque lorsqu'une référence instrumentale peut être reprise par le microphone."
+      ]
+    }
+  ],
+  "orchestration_task": {
+    "title": "Orchestrer la livraison du MVP mode libre",
+    "plan": [
+      "Appliquer les décisions figées : canto.paulmondou.fr, Firefox desktop et Android, Studio Grand, Soft Piano et Warm Organ.",
+      "Livrer le socle PWA et les primitives musicales partagées.",
+      "Livrer le piano sonore avec ses interactions accessibles.",
+      "Prototyper puis qualifier la détection de hauteur sur un corpus de signaux reproductibles.",
+      "Livrer la visualisation note-temps alignée au piano.",
+      "Intégrer la boucle complète et valider confidentialité, hors ligne, précision, latence, accessibilité et compatibilité.",
+      "Maintenir la traçabilité des critères et préparer les fondations du mode chansons sans l'implémenter."
+    ]
+  },
+  "context_pack": {
+    "out": "logics/context-packs/mvp-mode-libre.json",
+    "mode": "summary-only",
+    "profile": "normal"
+  }
+}

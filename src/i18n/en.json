@@ -1,0 +1,67 @@
+{
+  "app": {
+    "name": "Canto",
+    "tagline": "Sing in tune, on your device",
+    "offlineBadge": "Runs locally",
+    "offlineHint": "Audio analysis, instruments and display all run in this browser. Nothing is recorded or uploaded.",
+    "installedOffline": "Ready offline. You can practise without a network connection.",
+    "updateAvailable": "A new version is ready. Reload to update.",
+    "updateAction": "Reload"
+  },
+  "mic": {
+    "start": "Enable microphone",
+    "stop": "Stop microphone",
+    "consent": "Canto needs your microphone to show your pitch. The signal is analysed on this device and never leaves it.",
+    "statusIdle": "Microphone off",
+    "statusListening": "Listening",
+    "statusSilence": "No sound detected. Sing a steady note.",
+    "statusWeak": "Too quiet. Move closer to the microphone.",
+    "statusUnstable": "Pitch unclear. Hold one steady vowel.",
+    "errorDenied": "Microphone access was refused. Allow it in your browser site settings, then enable it again.",
+    "errorUnavailable": "No microphone was found. Connect an input device and try again.",
+    "errorInterrupted": "The microphone input stopped. Check the device, then enable it again.",
+    "errorUnsupported": "This browser cannot capture audio here. Use HTTPS, or localhost in development.",
+    "headphonesHint": "Using speakers? The instrument can leak into the microphone. Headphones give a cleaner reading."
+  },
+  "pitch": {
+    "label": "Detected note",
+    "none": "—",
+    "inTune": "In tune",
+    "offTune": "Off centre",
+    "uncertain": "Uncertain",
+    "level": "Input level"
+  },
+  "piano": {
+    "label": "Piano keyboard",
+    "keyLabel": "Play {note}",
+    "instrument": "Instrument",
+    "instrumentStudioGrand": "Studio Grand",
+    "instrumentSoftPiano": "Soft Piano",
+    "instrumentWarmOrgan": "Warm Organ",
+    "volume": "Instrument volume",
+    "mute": "Mute piano",
+    "unmute": "Unmute piano",
+    "panic": "Stop all sound",
+    "octaveDown": "Lower octave",
+    "octaveUp": "Higher octave",
+    "range": "Visible range",
+    "rangeValue": "{low} to {high}",
+    "keyboardHint": "Computer keyboard: A W S E D F T G Y H U J K play the lower octave, Z X C V B N M the next one up. Arrow left and right change octave."
+  },
+  "trace": {
+    "label": "Voice pitch over the last eight seconds",
+    "legendInTune": "Within 15 cents of the note",
+    "legendOff": "Off the note centre",
+    "legendUncertain": "Uncertain pitch, shown dashed",
+    "readingDirection": "Now is at the keyboard; older pitch rises."
+  },
+  "a11y": {
+    "activeNotes": "Playing {notes}",
+    "noActiveNotes": "No note playing",
+    "pitchAnnounce": "{note}"
+  },
+  "footer": {
+    "privacy": "No account, no server, no audio leaves this device.",
+    "scope": "Free practice mode only."
+  }
+}
