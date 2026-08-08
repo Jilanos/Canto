@@ -4,7 +4,7 @@
 > Status: In progress
 > Understanding: 90%
 > Confidence: 85%
-> Progress: 80%
+> Progress: 90%
 > Complexity: Medium
 > Theme: Implementation delivery
 > Reminder: Update status/understanding/confidence/progress and linked request/backlog references when you edit this doc.
@@ -46,8 +46,11 @@
 - 2026-08-08 Les verifications exactes de la workflow CI ont ete rejouees en local contre le conteneur : toutes passent.
 - 2026-08-08 YAML des deux workflows analyse sans erreur. Garde-fous simules : `v1.2.3` et `v10.0.11` acceptes, `v1.2`, `1.2.3` et `v1.2.3-rc1` refuses ; le motif d'image de `deploy-image.sh` accepte `:v1.2.3` et refuse `:latest` comme `:sha-...`.
 - 2026-08-08 `npm test` : 111 tests passants. `npm run build` : bundle statique inchange.
+- 2026-08-08 Environnement GitHub `production` verifie present sur `Jilanos/Canto` avec les quatre secrets attendus : `VPS_HOST`, `VPS_USER`, `VPS_SSH_PORT`, `VPS_SSH_KEY`. GitHub ne permet pas de relire une valeur de secret ; la preuve porte sur la presence et l'horodatage.
+- 2026-08-08 Ruleset `Release tags` cree sur le depot, identifiant 20583689 : cible `refs/tags/v*`, application active, regles creation, mise a jour et suppression restreintes, contournement reserve au role administrateur du depot. Seul le proprietaire peut donc declencher une mise en production.
+- 2026-08-08 Compatibilite avec la politique de securite de contenu commune verifiee sur le build reel : aucune balise script ou style en ligne dans la coquille, aucun hote distant reference dans le bundle, unique appel reseau du bundle destine a une ressource de meme origine. `default-src 'self'` avec `img-src 'self' data:`, `worker-src 'self'` et `manifest-src 'self'` suffit donc sans exception supplementaire.
 - Non execute : aucune release reelle, aucun deploiement reel. La chaine n'a jamais ete declenchee, conformement a la consigne de ne pas publier sans instruction explicite.
-- Prerequis non satisfaits cote GitHub : environnement `production`, secrets SSH et ruleset sur `v*` restent a creer par le proprietaire du depot.
+- Prerequis GitHub desormais satisfaits : environnement `production`, secrets SSH et ruleset `v*` en place. Reste le poussage des fichiers de workflow, bloque par le jeton de la session qui ne porte pas la portee `workflow`.
 - Dependance : l'hebergement lui-meme, service Compose, bloc Caddy, DNS et derogation microphone, appartient a `req_004_heberger_canto_sur_canto_paulmondou_fr` dans `infra-paulmondou`.
 
 # Report
@@ -59,7 +62,7 @@
 - CI : `.github/workflows/ci.yml` verifie sur `main` et chaque pull request le typage, les tests, puis construit l'image et verifie le contrat d'hebergement contre un conteneur reel. Une regression de `nginx.conf` echoue donc en CI et non pendant une release.
 - Documentation : le README decrit la commande de release, la chaine declenchee etape par etape, le rollback par redeploiement du tag precedent, les secrets et l'environnement GitHub a creer, et le fait que sans ruleset sur `v*` tout collaborateur peut declencher une mise en production.
 - Signale a l'equipe infrastructure : la politique commune du Caddyfile interdit le microphone sur tous les sites ; sans derogation ciblee, Canto se chargera parfaitement et n'entendra rien.
-- Reste a faire : creer l'environnement et les secrets GitHub, poser le ruleset `v*`, attendre la livraison de `req_004` cote infrastructure, puis realiser la premiere release reelle sur instruction explicite.
+- Reste a faire : pousser les fichiers de workflow, ce qui exige un jeton portant la portee `workflow` ; attendre la livraison de `req_004` cote infrastructure, service Compose, bloc Caddy, DNS et derogation microphone ; puis realiser la premiere release reelle sur instruction explicite.
 
 # AI Context
 - Summary: Mettre Canto en production par release taguee
