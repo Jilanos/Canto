@@ -1,7 +1,7 @@
 {
   "name": "canto",
   "private": true,
-  "version": "0.1.0",
+  "version": "1.0.0",
   "type": "module",
   "description": "Local-first PWA to practise vocal pitch against a visual piano",
   "scripts": {
