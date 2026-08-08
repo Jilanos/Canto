@@ -1,0 +1,339 @@
+{
+  "budgets": {
+    "max_docs": 16,
+    "max_docs_per_ref": 4
+  },
+  "changed_paths": [
+    "logics/backlog/item_006_tenir_le_mode_libre_dans_un_seul_ecran.md",
+    "logics/backlog/item_007_diagnostiquer_et_corriger_le_decrochage_de_la_detection_sur_note_tenue.md",
+    "logics/backlog/item_008_conteneuriser_le_build_statique_de_canto.md",
+    "logics/backlog/item_009_automatiser_la_release_taguee_vers_ghcr_et_le_vps.md",
+    "logics/context-packs/retours-premier-essai.json",
+    "logics/product/prod_002_canto_mode_libre_lisibilite_et_fiabilite_apres_premier_essai.md",
+    "logics/product/prod_003_canto_chaine_de_release_taguee.md",
+    "logics/request/req_001_corriger_les_deux_points_bloquants_remontes_au_premier_essai_du_mode_libre.md",
+    "logics/request/req_002_publier_canto_en_production_par_release_taguee.md",
+    "logics/scaffold/release-par-tag.json",
+    "logics/scaffold/retours-premier-essai.json",
+    "logics/tasks/task_002_traiter_les_retours_du_premier_essai_du_mode_libre.md",
+    "logics/tasks/task_003_mettre_canto_en_production_par_release_taguee.md"
+  ],
+  "command": "logics-manager sync context-pack req_002_publier_canto_en_production_par_release_taguee item_008_conteneuriser_le_build_statique_de_canto item_009_automatiser_la_release_taguee_vers_ghcr_et_le_vps task_003_mettre_canto_en_production_par_release_taguee --mode diff-first --profile normal --handoff",
+  "companion_docs": [
+    {
+      "kind": "product",
+      "linked_refs": {
+        "item": [
+          "item_008_conteneuriser_le_build_statique_de_canto",
+          "item_009_automatiser_la_release_taguee_vers_ghcr_et_le_vps"
+        ],
+        "prod": [
+          "prod_003_canto_chaine_de_release_taguee"
+        ],
+        "req": [
+          "req_002_publier_canto_en_production_par_release_taguee"
+        ],
+        "task": [
+          "task_003_mettre_canto_en_production_par_release_taguee"
+        ]
+      },
+      "path": "logics/product/prod_003_canto_chaine_de_release_taguee.md",
+      "ref": "prod_003_canto_chaine_de_release_taguee",
+      "sections": {
+        "Goals": [
+          "- Rendre chaque mise en production tracable a un tag et a un commit.",
+          "- Empecher la publication d'un artefact non teste ou hors de main.",
+          "- Permettre un retour arriere immediat sur la version precedente."
+        ],
+        "Key product decisions": [
+          "- Use structured input as the source of truth for generated docs.",
+          "- Keep generated write paths local and repo-bounded."
+        ],
+        "Overview": [
+          "Passer d'un build local a une publication de production reproductible, verifiee et reversible, alignee sur le motif deja en place pour les autres applications du VPS."
+        ],
+        "References": [
+          "- Product back-reference: `req_002_publier_canto_en_production_par_release_taguee`",
+          "- Task back-reference: `task_003_mettre_canto_en_production_par_release_taguee`"
+        ]
+      },
+      "status": "Proposed",
+      "title": "Canto : chaine de release taguee"
+    }
+  ],
+  "docs": [
+    {
+      "ai_context": {
+        "keywords": "request-chain-scaffold, publier canto en production par release taguee, development-ready",
+        "skip when": "The change is unrelated to this scaffolded request chain.",
+        "summary": "Publier Canto en production par release taguee",
+        "use when": "You need to implement or review the scaffolded workflow for Publier Canto en production par release taguee."
+      },
+      "kind": "request",
+      "linked_refs": {
+        "item": [
+          "item_008_conteneuriser_le_build_statique_de_canto",
+          "item_009_automatiser_la_release_taguee_vers_ghcr_et_le_vps"
+        ],
+        "prod": [
+          "prod_003_canto_chaine_de_release_taguee"
+        ],
+        "req": [
+          "req_002_publier_canto_en_production_par_release_taguee"
+        ]
+      },
+      "path": "logics/request/req_002_publier_canto_en_production_par_release_taguee.md",
+      "ref": "req_002_publier_canto_en_production_par_release_taguee",
+      "schema_version": "1.0",
+      "sections": {
+        "Acceptance criteria": [
+          "- AC1: Un tag strictement au format vX.Y.Z declenche la chaine de release ; tout autre tag est refuse.",
+          "- AC2: La release refuse de deployer si le commit tague n'est pas contenu dans main.",
+          "- AC3: Les tests et le typage du projet passent avant toute construction d'image.",
+          "- AC4: L'image est publiee dans GHCR avec le tag de release et le SHA du commit ; le deploiement utilise le tag exact, jamais latest.",
+          "- AC5: Une sonde de sante valide la version deployee ; en cas d'echec, l'image precedente est retablie et la workflow echoue.",
+          "- AC6: Aucun secret n'apparait dans les journaux ; les secrets SSH et de production sont rattaches a un environnement GitHub production."
+        ],
+        "Needs": [
+          "- Publier Canto sur canto.paulmondou.fr par un tag GitHub, sans etape manuelle sur le VPS.",
+          "- Deployer exactement l'artefact teste, identifiable et reversible.",
+          "- Verifier automatiquement que la version deployee repond avant de valider la release."
+        ]
+      },
+      "status": "Draft",
+      "title": "Publier Canto en production par release taguee"
+    },
+    {
+      "ai_context": {
+        "keywords": "scaffolded-backlog, conteneuriser le build statique de canto, implementation-ready",
+        "skip when": "The change belongs to another backlog slice.",
+        "summary": "Conteneuriser le build statique de Canto",
+        "use when": "Implementing the scaffolded slice for Conteneuriser le build statique de Canto."
+      },
+      "kind": "backlog",
+      "linked_refs": {
+        "item": [
+          "item_008_conteneuriser_le_build_statique_de_canto"
+        ],
+        "prod": [
+          "prod_003_canto_chaine_de_release_taguee"
+        ],
+        "req": [
+          "req_002_publier_canto_en_production_par_release_taguee"
+        ],
+        "task": [
+          "task_003_mettre_canto_en_production_par_release_taguee"
+        ]
+      },
+      "path": "logics/backlog/item_008_conteneuriser_le_build_statique_de_canto.md",
+      "ref": "item_008_conteneuriser_le_build_statique_de_canto",
+      "schema_version": "1.0",
+      "sections": {
+        "Acceptance criteria": [
+          "- AC1: L'image se construit depuis un checkout propre et ne contient ni sources ni dependances de developpement.",
+          "- AC2: Le conteneur sert l'application a la racine, avec repli sur index.html.",
+          "- AC3: Le manifeste, le service worker et les icones sont servis avec leurs types MIME attendus.",
+          "- AC4: sw.js et index.html ne sont pas mis en cache de facon a bloquer une mise a jour.",
+          "- AC5: Un point de sante repond et sert de healthcheck.",
+          "- AC6: Le conteneur demarre en lecture seule, sans privileges supplementaires."
+        ],
+        "Problem": [
+          "- Canto n'a pas d'image de production : rien ne permet de deployer l'artefact statique sur le VPS."
+        ]
+      },
+      "status": "Ready",
+      "title": "Conteneuriser le build statique de Canto"
+    },
+    {
+      "ai_context": {
+        "keywords": "scaffolded-backlog, automatiser la release taguee vers ghcr et le vps, implementation-ready",
+        "skip when": "The change belongs to another backlog slice.",
+        "summary": "Automatiser la release taguee vers GHCR et le VPS",
+        "use when": "Implementing the scaffolded slice for Automatiser la release taguee vers GHCR et le VPS."
+      },
+      "kind": "backlog",
+      "linked_refs": {
+        "item": [
+          "item_009_automatiser_la_release_taguee_vers_ghcr_et_le_vps"
+        ],
+        "prod": [
+          "prod_003_canto_chaine_de_release_taguee"
+        ],
+        "req": [
+          "req_002_publier_canto_en_production_par_release_taguee"
+        ],
+        "task": [
+          "task_003_mettre_canto_en_production_par_release_taguee"
+        ]
+      },
+      "path": "logics/backlog/item_009_automatiser_la_release_taguee_vers_ghcr_et_le_vps.md",
+      "ref": "item_009_automatiser_la_release_taguee_vers_ghcr_et_le_vps",
+      "schema_version": "1.0",
+      "sections": {
+        "Acceptance criteria": [
+          "- AC1: Un tag vX.Y.Z declenche la chaine ; un tag mal forme l'interrompt avec un message explicite.",
+          "- AC2: Un tag pose sur un commit absent de main echoue avant toute publication d'image.",
+          "- AC3: Tests et typage s'executent avant la construction et bloquent la release en cas d'echec.",
+          "- AC4: L'image publiee porte le tag de release et le SHA ; le deploiement reference le tag exact.",
+          "- AC5: L'echec de la sonde de sante declenche le retablissement de l'image precedente et fait echouer la workflow.",
+          "- AC6: Aucun secret n'est imprime dans les journaux."
+        ],
+        "Problem": [
+          "- Aucune chaine automatisee ne relie un tag a une version deployee et verifiee en production."
+        ]
+      },
+      "status": "Ready",
+      "title": "Automatiser la release taguee vers GHCR et le VPS"
+    },
+    {
+      "ai_context": {},
+      "kind": "product",
+      "linked_refs": {
+        "item": [
+          "item_008_conteneuriser_le_build_statique_de_canto",
+          "item_009_automatiser_la_release_taguee_vers_ghcr_et_le_vps"
+        ],
+        "prod": [
+          "prod_003_canto_chaine_de_release_taguee"
+        ],
+        "req": [
+          "req_002_publier_canto_en_production_par_release_taguee"
+        ],
+        "task": [
+          "task_003_mettre_canto_en_production_par_release_taguee"
+        ]
+      },
+      "path": "logics/product/prod_003_canto_chaine_de_release_taguee.md",
+      "ref": "prod_003_canto_chaine_de_release_taguee",
+      "schema_version": "1.0",
+      "sections": {},
+      "status": "Proposed",
+      "title": "Canto : chaine de release taguee"
+    },
+    {
+      "ai_context": {
+        "keywords": "scaffolded-task, request-chain-scaffold, orchestration",
+        "skip when": "Working on one isolated sibling slice.",
+        "summary": "Mettre Canto en production par release taguee",
+        "use when": "Coordinating implementation of a scaffolded request chain."
+      },
+      "kind": "task",
+      "linked_refs": {
+        "item": [
+          "item_008_conteneuriser_le_build_statique_de_canto",
+          "item_009_automatiser_la_release_taguee_vers_ghcr_et_le_vps"
+        ],
+        "prod": [
+          "prod_003_canto_chaine_de_release_taguee"
+        ],
+        "req": [
+          "req_002_publier_canto_en_production_par_release_taguee"
+        ],
+        "task": [
+          "task_003_mettre_canto_en_production_par_release_taguee"
+        ]
+      },
+      "path": "logics/tasks/task_003_mettre_canto_en_production_par_release_taguee.md",
+      "ref": "task_003_mettre_canto_en_production_par_release_taguee",
+      "schema_version": "1.0",
+      "sections": {
+        "Context": [
+          "- Orchestrate the scaffolded request chain and keep sibling implementation slices linked."
+        ],
+        "Validation": [
+          "- (no validation recorded yet)"
+        ]
+      },
+      "status": "Ready",
+      "title": "Mettre Canto en production par release taguee"
+    }
+  ],
+  "estimates": {
+    "char_count": 7988,
+    "companion_doc_count": 1,
+    "doc_count": 5
+  },
+  "generated_at": "2026-08-08T07:57:52Z",
+  "handoff": {
+    "companion_doc_count": 1,
+    "enabled": true,
+    "source_refs": [
+      "req_002_publier_canto_en_production_par_release_taguee",
+      "item_008_conteneuriser_le_build_statique_de_canto",
+      "item_009_automatiser_la_release_taguee_vers_ghcr_et_le_vps",
+      "task_003_mettre_canto_en_production_par_release_taguee"
+    ],
+    "validation_summary_count": 1
+  },
+  "i18n": {
+    "actions": [
+      "Keep catalogs valid with logics-manager i18n validate in the project quality gate."
+    ],
+    "applicable": true,
+    "catalogs": {
+      "en": 51
+    },
+    "configured": true,
+    "contract": {
+      "applicability": "applicable",
+      "catalog": {
+        "path": "src/i18n/{locale}.json"
+      },
+      "default_locale": "en",
+      "fallback_locale": "en",
+      "locales": [
+        "en"
+      ],
+      "schema_version": "1.0",
+      "source_locale": "en"
+    },
+    "contract_path": "logics/i18n/contract.json",
+    "findings": [],
+    "next_action": "The i18n contract is valid.",
+    "ok": true,
+    "state": "valid"
+  },
+  "mode": "diff-first",
+  "profile": "normal",
+  "ref": "req_002_publier_canto_en_production_par_release_taguee,item_008_conteneuriser_le_build_statique_de_canto,item_009_automatiser_la_release_taguee_vers_ghcr_et_le_vps,task_003_mettre_canto_en_production_par_release_taguee",
+  "refs": [
+    "req_002_publier_canto_en_production_par_release_taguee",
+    "item_008_conteneuriser_le_build_statique_de_canto",
+    "item_009_automatiser_la_release_taguee_vers_ghcr_et_le_vps",
+    "task_003_mettre_canto_en_production_par_release_taguee"
+  ],
+  "release": {
+    "blocking_reasons": [
+      "Missing logics/release/contract.json."
+    ],
+    "configured": false,
+    "contract_path": "logics/release/contract.json",
+    "guidance": [
+      "Release readiness must come from project-owned evidence, not conversational memory.",
+      "Use release status or validate before preparing or claiming release readiness.",
+      "Publication-oriented actions are explicit operator actions and are separate from safe read/validate actions."
+    ],
+    "next_action": "Run logics-manager release discover --write, then review and promote logics/release/contract.draft.json to logics/release/contract.json.",
+    "publication_actions": [
+      "GitHub release publication",
+      "external publication"
+    ],
+    "required_gates": [],
+    "safe_actions": [
+      "logics-manager release status",
+      "logics-manager release plan <version>",
+      "logics-manager release validate <version>"
+    ],
+    "state": "not_configured",
+    "target_version": null
+  },
+  "validation_summary": [
+    {
+      "items": [
+        "- (no validation recorded yet)"
+      ],
+      "path": "logics/tasks/task_003_mettre_canto_en_production_par_release_taguee.md",
+      "ref": "task_003_mettre_canto_en_production_par_release_taguee"
+    }
+  ]
+}

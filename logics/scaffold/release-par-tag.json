@@ -1,0 +1,132 @@
+{
+  "title": "Publier Canto en production par release taguee",
+  "references": [
+    "infra-paulmondou/GITHUB_TAG_RELEASE.md",
+    "infra-paulmondou/Caddyfile",
+    "infra-paulmondou/docker-compose.yml",
+    "Decision utilisateur du 8 aout 2026 : release via GitHub Actions, hebergement derriere Caddy"
+  ],
+  "request": {
+    "complexity": "Medium",
+    "theme": "Livraison continue",
+    "needs": [
+      "Publier Canto sur canto.paulmondou.fr par un tag GitHub, sans etape manuelle sur le VPS.",
+      "Deployer exactement l'artefact teste, identifiable et reversible.",
+      "Verifier automatiquement que la version deployee repond avant de valider la release."
+    ],
+    "context": [
+      "L'infrastructure paulmondou.fr deploie ses applications par tag GitHub : image immuable publiee dans GHCR, deploiement SSH de ce tag exact, sonde de sante, rollback sur l'image precedente. La consigne de reference est infra-paulmondou/GITHUB_TAG_RELEASE.md.",
+      "Canto est un build 100 % statique servi a la racine du domaine : l'image n'a besoin que d'un serveur de fichiers statiques, sans runtime applicatif.",
+      "Le depot infra-paulmondou reste la source de verite pour Caddy, Compose, volumes et reseaux ; l'ajout du service et du bloc de site s'y fait dans une demande dediee.",
+      "Les autres applications du VPS suivent le meme motif : image versionnee via variable d'environnement, service Compose expose uniquement a Caddy, conteneur durci et en lecture seule.",
+      "Le service worker impose une regle de cache particuliere : sw.js ne doit pas etre mis en cache longuement, sans quoi une nouvelle version ne se propage jamais."
+    ],
+    "acceptance_criteria": [
+      "AC1: Un tag strictement au format vX.Y.Z declenche la chaine de release ; tout autre tag est refuse.",
+      "AC2: La release refuse de deployer si le commit tague n'est pas contenu dans main.",
+      "AC3: Les tests et le typage du projet passent avant toute construction d'image.",
+      "AC4: L'image est publiee dans GHCR avec le tag de release et le SHA du commit ; le deploiement utilise le tag exact, jamais latest.",
+      "AC5: Une sonde de sante valide la version deployee ; en cas d'echec, l'image precedente est retablie et la workflow echoue.",
+      "AC6: Aucun secret n'apparait dans les journaux ; les secrets SSH et de production sont rattaches a un environnement GitHub production.",
+      "AC7: L'image sert les fichiers statiques avec les bons types MIME, un repli sur index.html et une politique de cache qui laisse sw.js se renouveler.",
+      "AC8: La procedure de release, les secrets requis et le principe de rollback sont documentes dans le depot."
+    ]
+  },
+  "product": {
+    "title": "Canto : chaine de release taguee",
+    "overview": "Passer d'un build local a une publication de production reproductible, verifiee et reversible, alignee sur le motif deja en place pour les autres applications du VPS.",
+    "goals": [
+      "Rendre chaque mise en production tracable a un tag et a un commit.",
+      "Empecher la publication d'un artefact non teste ou hors de main.",
+      "Permettre un retour arriere immediat sur la version precedente."
+    ],
+    "non_goals": [
+      "Deployer en continu depuis main sans tag.",
+      "Modifier la chaine de release des autres applications.",
+      "Introduire un runtime serveur ou une base de donnees pour Canto."
+    ]
+  },
+  "backlog_items": [
+    {
+      "title": "Conteneuriser le build statique de Canto",
+      "priority": "High",
+      "complexity": "Low",
+      "theme": "Conteneurisation",
+      "request_acs": ["AC7"],
+      "problem": [
+        "Canto n'a pas d'image de production : rien ne permet de deployer l'artefact statique sur le VPS."
+      ],
+      "scope_in": [
+        "Dockerfile multi-etapes : construction du bundle puis service des fichiers statiques par un serveur minimal.",
+        "Fichier d'exclusion pour garder l'image reduite au strict necessaire.",
+        "Types MIME corrects pour le manifeste, le service worker et les icones.",
+        "Repli sur index.html pour les chemins inconnus.",
+        "En-tetes de cache : ressources versionnees mises en cache longuement, index.html et sw.js revalides.",
+        "Point de sante interrogeable par le healthcheck Compose.",
+        "Conteneur compatible avec une execution en lecture seule et sans privileges."
+      ],
+      "scope_out": [
+        "Ajout d'un runtime applicatif ou d'une API.",
+        "Configuration du reverse proxy, qui appartient au depot d'infrastructure."
+      ],
+      "acceptance_criteria": [
+        "AC1: L'image se construit depuis un checkout propre et ne contient ni sources ni dependances de developpement.",
+        "AC2: Le conteneur sert l'application a la racine, avec repli sur index.html.",
+        "AC3: Le manifeste, le service worker et les icones sont servis avec leurs types MIME attendus.",
+        "AC4: sw.js et index.html ne sont pas mis en cache de facon a bloquer une mise a jour.",
+        "AC5: Un point de sante repond et sert de healthcheck.",
+        "AC6: Le conteneur demarre en lecture seule, sans privileges supplementaires."
+      ]
+    },
+    {
+      "title": "Automatiser la release taguee vers GHCR et le VPS",
+      "priority": "High",
+      "complexity": "Medium",
+      "theme": "Integration continue",
+      "request_acs": ["AC1", "AC2", "AC3", "AC4", "AC5", "AC6"],
+      "problem": [
+        "Aucune chaine automatisee ne relie un tag a une version deployee et verifiee en production."
+      ],
+      "scope_in": [
+        "Workflow declenchee sur les tags v*, avec verification stricte du format.",
+        "Verification que le commit tague est un ancetre de main.",
+        "Execution des tests et du typage avant construction.",
+        "Construction et publication de l'image dans GHCR avec le tag de release et le SHA.",
+        "Deploiement SSH du tag exact sur le VPS via le Compose partage.",
+        "Sonde de sante post-deploiement, rollback sur l'image precedente en cas d'echec.",
+        "Creation de la GitHub Release apres succes et resume de workflow.",
+        "Permissions GitHub minimales et secrets rattaches a l'environnement production."
+      ],
+      "scope_out": [
+        "Deploiement automatique depuis main.",
+        "Modification des workflows des autres depots.",
+        "Gestion des enregistrements DNS."
+      ],
+      "acceptance_criteria": [
+        "AC1: Un tag vX.Y.Z declenche la chaine ; un tag mal forme l'interrompt avec un message explicite.",
+        "AC2: Un tag pose sur un commit absent de main echoue avant toute publication d'image.",
+        "AC3: Tests et typage s'executent avant la construction et bloquent la release en cas d'echec.",
+        "AC4: L'image publiee porte le tag de release et le SHA ; le deploiement reference le tag exact.",
+        "AC5: L'echec de la sonde de sante declenche le retablissement de l'image precedente et fait echouer la workflow.",
+        "AC6: Aucun secret n'est imprime dans les journaux.",
+        "AC7: Le resume de workflow indique tag, SHA, image, service deploye, URL de sante et resultat.",
+        "AC8: La documentation decrit la commande de release, les secrets a creer et le principe de rollback."
+      ]
+    }
+  ],
+  "orchestration_task": {
+    "title": "Mettre Canto en production par release taguee",
+    "plan": [
+      "1. Livrer le Dockerfile statique et verifier localement le service des fichiers, les types MIME et le repli.",
+      "2. Livrer la workflow de release et valider ses garde-fous a vide, sans declencher de vrai deploiement.",
+      "3. Se coordonner avec la demande d'hebergement du depot infra-paulmondou : nom de service, variable d'image, domaine et URL de sante.",
+      "4. Documenter la procedure de release, les secrets et le rollback dans le README.",
+      "5. Realiser la premiere release reelle seulement apres validation explicite, puis consigner les preuves."
+    ]
+  },
+  "context_pack": {
+    "out": "logics/context-packs/release-par-tag.json",
+    "mode": "diff-first",
+    "profile": "normal"
+  }
+}

@@ -53,6 +53,8 @@
 - 2026-08-08 `npm run preview` : `/`, `/manifest.webmanifest` et `/sw.js` servis correctement depuis la racine.
 - 2026-08-08 `logics-manager lint --require-status` : OK. `logics-manager audit --group-by-doc` : 0 blocage, 8 avertissements, tous des preuves de traçabilité différées au closeout. `logics-manager flow validate` : 0 finding. `logics-manager health` : 0 signal.
 - 2026-08-08 `logics-manager i18n validate` : valide. Catalogue anglais unique en `src/i18n/en.json`, clés sémantiques imbriquées, absence de clé manquante ou inutilisée vérifiée par test.
+- 2026-08-08 Premier essai utilisateur sur le build local : la boucle jouer / chanter / ajuster fonctionne, les trois timbres sont validés, le microphone est bien détecté. Notes fantômes observées pendant la recherche de hauteur, jugées représentatives d'une voix non encore calée et hors périmètre de correction.
+- 2026-08-08 Deux défauts bloquants remontés par cet essai : la page ne tient pas dans un seul écran, on ne peut pas voir simultanément le piano et la note détectée ; sur une note tenue, la détection décroche au bout de quelques secondes. Traités dans `req_001_corriger_les_deux_points_bloquants_remontes_au_premier_essai_du_mode_libre`.
 - Non exécuté : validation sur appareils cibles (installation, hors ligne réel, permissions, précision micro, latence mesurée, fluidité) sur Chrome Android, Firefox desktop et Firefox Android. Protocole prêt dans `docs/validation-protocol.md`, section 2.
 - Non exécuté : publication et vérification à la racine de `canto.paulmondou.fr`.
 

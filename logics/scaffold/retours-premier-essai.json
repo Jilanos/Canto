@@ -1,0 +1,128 @@
+{
+  "title": "Corriger les deux points bloquants remontes au premier essai du mode libre",
+  "references": [
+    "Retour utilisateur du 8 aout 2026 sur le build local du MVP mode libre",
+    "task_001_orchestrer_la_livraison_du_mvp_mode_libre",
+    "docs/validation-protocol.md"
+  ],
+  "request": {
+    "complexity": "High",
+    "theme": "Retours d'usage MVP",
+    "needs": [
+      "Voir en meme temps le piano, la note detectee et la trace, sans faire defiler la page.",
+      "Garder une note tenue detectee aussi longtemps qu'elle est chantee, sans decrochage au bout de quelques secondes.",
+      "Comprendre pourquoi la detection decroche, au lieu de contourner le symptome."
+    ],
+    "context": [
+      "Premier essai du 8 aout 2026 sur le build local : la boucle fonctionne, les trois timbres sont valides et le microphone est bien detecte.",
+      "Les notes fantomes observees pendant la recherche de hauteur sont jugees normales par l'utilisateur : la voix balaie les frequences avant de se stabiliser. Elles ne font pas partie de cette demande.",
+      "L'ecran actuel empile en-tete, panneau de hauteur, legende, trace, piano, controles et pied de page ; l'ensemble depasse la hauteur du viewport et oblige a defiler pour voir le piano et la note en meme temps.",
+      "Sur une note tenue stable, la detection s'arrete au bout de quelques secondes alors que le son continue. Hypothese principale : un traitement voix du navigateur, suppression de bruit ou controle automatique de gain, attenue un signal stationnaire malgre les contraintes getUserMedia demandees. Hypothese secondaire : un seuil interne de niveau ou de clarte devenu trop strict quand le signal s'attenue.",
+      "L'hypothese doit etre mesuree avant correction : les contraintes demandees a getUserMedia ne sont pas toujours celles reellement appliquees par le navigateur.",
+      "La correction de mise en page ne doit pas casser l'alignement structurel entre la trace et les touches, qui vient d'une source de geometrie unique."
+    ],
+    "acceptance_criteria": [
+      "AC1: Sur mobile en paysage et sur ordinateur, le piano, la note detectee et la trace sont visibles simultanement sans defilement.",
+      "AC2: La zone de trace occupe une part bornee de la hauteur disponible ; le clavier et le bandeau de note restent visibles quelle que soit la taille du viewport cible.",
+      "AC3: Une note tenue pendant au moins vingt secondes reste detectee en continu, sans retour aux etats silence, signal trop faible ou hauteur instable.",
+      "AC4: La cause du decrochage est identifiee et documentee, contraintes audio reellement appliquees a l'appui, et non seulement contournee.",
+      "AC5: Un mode diagnostic permet de relire les contraintes appliquees, le niveau et la confiance sans brancher un debogueur.",
+      "AC6: Des tests automatises couvrent la regle de mise en page et la non-regression du decrochage sur un signal stationnaire long.",
+      "AC7: Aucune regression sur l'alignement trace/touches, les etats existants, l'accessibilite et le fonctionnement hors ligne."
+    ]
+  },
+  "product": {
+    "title": "Canto mode libre : lisibilite et fiabilite apres premier essai",
+    "overview": "Rendre la boucle jouer, chanter, ajuster reellement praticable : tout tient dans un ecran et la detection ne lache pas une note tenue.",
+    "goals": [
+      "Supprimer le defilement entre le piano et le retour visuel de hauteur.",
+      "Tenir une note aussi longtemps que l'utilisateur la chante.",
+      "Rendre le comportement du pipeline audio observable pour les prochains diagnostics."
+    ],
+    "non_goals": [
+      "Supprimer les notes fantomes pendant la recherche de hauteur, jugees representatives d'une voix non encore calee.",
+      "Ajouter un mode chansons, une evaluation ou un historique de seance.",
+      "Remplacer la synthese des timbres par des echantillons."
+    ]
+  },
+  "backlog_items": [
+    {
+      "title": "Tenir le mode libre dans un seul ecran",
+      "priority": "High",
+      "complexity": "Medium",
+      "theme": "Mise en page",
+      "request_acs": ["AC1", "AC2", "AC7"],
+      "problem": [
+        "La page defile : l'utilisateur ne peut pas voir le piano et la note detectee en meme temps que la trace, ce qui casse la boucle d'ajustement."
+      ],
+      "scope_in": [
+        "Mise en page a hauteur bornee : l'application occupe la hauteur du viewport sans defilement sur les tailles cibles.",
+        "Reduction et bornage de la zone de trace au profit du clavier et du bandeau de note.",
+        "Hierarchie des blocs secondaires : legende, consentement, rappels clavier et casque, pied de page, densifies ou replies quand la hauteur manque.",
+        "Comportement en paysage mobile, en portrait mobile et sur ordinateur.",
+        "Redimensionnement correct du canvas lors des changements de taille et d'orientation."
+      ],
+      "scope_out": [
+        "Refonte graphique complete ou changement de direction visuelle.",
+        "Navigation multi-ecrans ou mise en page a onglets.",
+        "Modification de la geometrie horizontale partagee entre la trace et les touches."
+      ],
+      "acceptance_criteria": [
+        "AC1: Sur un viewport de reference en paysage mobile, en portrait mobile et sur ordinateur, piano, note detectee et trace sont visibles ensemble sans defilement.",
+        "AC2: La zone de trace ne depasse pas une part bornee de la hauteur disponible et conserve une hauteur minimale exploitable.",
+        "AC3: Le clavier conserve une hauteur jouable au doigt sur mobile.",
+        "AC4: Les contenus secondaires restent accessibles, meme replies, et ne sont jamais la seule source d'une information necessaire a la boucle.",
+        "AC5: Un test automatise verifie la regle de repartition des hauteurs pour les viewports cibles.",
+        "AC6: L'alignement entre la trace et les touches reste exact apres redimensionnement et changement d'orientation."
+      ]
+    },
+    {
+      "title": "Diagnostiquer et corriger le decrochage de la detection sur note tenue",
+      "priority": "High",
+      "complexity": "High",
+      "theme": "Fiabilite de la detection",
+      "request_acs": ["AC3", "AC4", "AC5", "AC6", "AC7"],
+      "problem": [
+        "Sur une note tenue stable, la detection s'arrete au bout de quelques secondes alors que le son continue : la boucle d'ajustement devient inutilisable exactement au moment ou l'utilisateur a stabilise sa voix."
+      ],
+      "scope_in": [
+        "Mesure des contraintes audio reellement appliquees par le navigateur, comparees a celles demandees.",
+        "Instrumentation du pipeline : evolution du niveau, de la clarte et de l'etat publie pendant une note tenue longue.",
+        "Correction de la cause identifiee, cote contraintes de capture ou cote seuils de validite.",
+        "Mode diagnostic activable, sans donnee audio persistee ni transmise.",
+        "Regle de detection robuste a une attenuation lente du signal.",
+        "Test de non-regression sur un signal stationnaire long."
+      ],
+      "scope_out": [
+        "Changement d'algorithme d'estimation de hauteur.",
+        "Traitement du signal cote reduction de bruit maison.",
+        "Suppression des notes fantomes pendant la recherche de hauteur."
+      ],
+      "acceptance_criteria": [
+        "AC1: Les contraintes audio reellement appliquees sont relevees et consignees pour chaque navigateur de la matrice.",
+        "AC2: La cause du decrochage est etablie par mesure, distinguant attenuation du signal capte et seuil interne trop strict.",
+        "AC3: Une note tenue pendant au moins vingt secondes reste publiee comme suivie, sans retour aux etats silence, trop faible ou instable.",
+        "AC4: Le correctif n'introduit pas de fausse detection prolongee apres l'arret reel du chant.",
+        "AC5: Un mode diagnostic affiche contraintes appliquees, niveau, clarte et etat courant, sans enregistrer ni transmettre d'audio.",
+        "AC6: Un test automatise sur un signal stationnaire long echoue si le decrochage reapparait.",
+        "AC7: Le comportement est reverifie sur Chrome Android, Firefox desktop et Firefox Android et consigne dans le protocole de validation."
+      ]
+    }
+  ],
+  "orchestration_task": {
+    "title": "Traiter les retours du premier essai du mode libre",
+    "plan": [
+      "1. Reproduire les deux symptomes et figer les viewports et la duree de note tenue servant de reference.",
+      "2. Instrumenter le pipeline audio et relever les contraintes reellement appliquees avant toute correction.",
+      "3. Livrer la mise en page a ecran unique et son test de repartition des hauteurs.",
+      "4. Livrer la correction du decrochage, son mode diagnostic et son test de non-regression.",
+      "5. Rejouer le protocole de validation sur les navigateurs obligatoires et consigner les mesures.",
+      "6. Mettre a jour docs/validation-protocol.md et le README avec les regles de mise en page et le mode diagnostic."
+    ]
+  },
+  "context_pack": {
+    "out": "logics/context-packs/retours-premier-essai.json",
+    "mode": "diff-first",
+    "profile": "normal"
+  }
+}
