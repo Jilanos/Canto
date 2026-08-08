@@ -2,19 +2,23 @@
  * Free-practice controller (item_005): binds the instrument engine, the microphone
  * pipeline, the trace renderer and the DOM together, and owns the user-visible
  * state machine for microphone status and pitch feedback.
+ *
+ * It also owns the vertical height budget (item_006): the trace and the keyboard are
+ * sized from measured chrome so the whole loop stays on one screen.
  */
 
 import { InstrumentEngine, isInstrumentId } from './audio/instruments';
-import { MicrophoneError, MicrophonePipeline, type MicrophoneFailure } from './audio/microphone';
+import { MicrophoneError, MicrophonePipeline, type CaptureReport, type MicrophoneFailure } from './audio/microphone';
 import { t, type TranslationKey } from './i18n';
 import { IN_TUNE_CENTS, noteLabel } from './music/notes';
 import { availableBottomNotes, clampBottomMidi, createKeyboardLayout } from './music/layout';
 import type { PitchSample, PitchState } from './pitch/tracker';
 import { TraceBuffer } from './render/trace-buffer';
-import { TraceRenderer } from './render/trace-renderer';
+import { TraceRenderer, UNCERTAIN_CLARITY } from './render/trace-renderer';
 import { loadPreferences, savePreferences, type Preferences } from './state/preferences';
+import { MIN_TRACE_HEIGHT, allocateHeights } from './ui/height-budget';
 import { PianoKeyboard, describeRange } from './ui/piano';
-import { renderApp, type AppView } from './ui/view';
+import { renderApp, renderDiagnostics, type AppView } from './ui/view';
 
 const MIC_STATUS_KEYS: Record<PitchState, TranslationKey> = {
   silence: 'mic.statusSilence',
@@ -30,6 +34,9 @@ const MIC_ERROR_KEYS: Record<MicrophoneFailure, TranslationKey> = {
   unsupported: 'mic.errorUnsupported',
 };
 
+/** Diagnostics refresh interval: readable without competing with the audio loop. */
+const DIAGNOSTICS_INTERVAL_MS = 250;
+
 export class CantoApp {
   private readonly view: AppView;
   private readonly engine: InstrumentEngine;
@@ -39,6 +46,14 @@ export class CantoApp {
   private readonly piano: PianoKeyboard;
   private preferences: Preferences;
   private lastAnnouncedNote: string | null = null;
+  private lastSample: PitchSample | null = null;
+  private captureReport: CaptureReport | null = null;
+  private diagnosticsOpen = false;
+  private diagnosticsTimer = 0;
+  private layoutFrame = 0;
+  private frameCount = 0;
+  private frameWindowStart = 0;
+  private frameRate = 0;
 
   constructor(root: HTMLElement) {
     this.preferences = loadPreferences();
@@ -67,10 +82,15 @@ export class CantoApp {
     this.microphone = new MicrophonePipeline(context, {
       onSample: (sample) => this.handleSample(sample),
       onFailure: (error) => this.handleMicrophoneFailure(error),
+      onCaptureReport: (report) => {
+        this.captureReport = report;
+        this.refreshDiagnostics();
+      },
     });
 
     this.bindControls();
     this.applyPreferencesToView();
+    this.applyHeightBudget();
     this.renderer.draw();
   }
 
@@ -79,6 +99,61 @@ export class CantoApp {
     this.renderer.stop();
     this.piano.destroy();
     this.engine.dispose();
+    if (this.diagnosticsTimer) window.clearInterval(this.diagnosticsTimer);
+    if (this.layoutFrame) cancelAnimationFrame(this.layoutFrame);
+  }
+
+  // --- layout (item_006) --------------------------------------------------
+
+  /**
+   * Measures the fixed chrome, twice when needed, and hands the remaining height to
+   * the keyboard and the trace. Measuring beats hard-coding because the chrome grows
+   * with its own copy, and the copy changes with the locale.
+   */
+  private applyHeightBudget(): void {
+    const { root, traceSection, pianoSection } = this.view;
+    const viewportHeight = window.innerHeight;
+
+    root.dataset.compact = 'false';
+    const chromeHeight = this.measureChrome();
+    root.dataset.compact = 'true';
+    const compactChromeHeight = this.measureChrome();
+    root.dataset.compact = 'false';
+
+    const budget = allocateHeights({ viewportHeight, chromeHeight, compactChromeHeight });
+    root.dataset.compact = String(budget.compact);
+    root.dataset.overflowing = String(budget.overflowing);
+    root.style.setProperty('--piano-height', `${Math.round(budget.piano)}px`);
+    root.style.setProperty('--trace-height', `${Math.round(budget.trace)}px`);
+
+    // Trust, then verify: the measurement above is an estimate of chrome that has
+    // not been laid out yet. If the result still overflows, take the overflow out of
+    // the trace rather than letting the controls be clipped.
+    const overflow = root.scrollHeight - root.clientHeight;
+    if (overflow > 1 && !budget.overflowing) {
+      const corrected = Math.max(MIN_TRACE_HEIGHT, budget.trace - overflow);
+      root.style.setProperty('--trace-height', `${Math.round(corrected)}px`);
+      root.dataset.compact = 'true';
+    }
+
+    // The canvas backing store follows its new CSS box.
+    void traceSection.offsetHeight;
+    void pianoSection.offsetHeight;
+    this.renderer.resize();
+  }
+
+  /** Height of everything that is not the trace or the keyboard. */
+  private measureChrome(): number {
+    const { root, traceSection, pianoSection } = this.view;
+    return Math.max(0, root.scrollHeight - traceSection.offsetHeight - pianoSection.offsetHeight);
+  }
+
+  private scheduleHeightBudget(): void {
+    if (this.layoutFrame) cancelAnimationFrame(this.layoutFrame);
+    this.layoutFrame = requestAnimationFrame(() => {
+      this.layoutFrame = 0;
+      this.applyHeightBudget();
+    });
   }
 
   // --- microphone ---------------------------------------------------------
@@ -94,6 +169,8 @@ export class CantoApp {
       this.view.micButton.textContent = t('mic.stop');
       this.view.micButton.setAttribute('aria-pressed', 'true');
       this.setStatus('mic.statusListening');
+      this.frameCount = 0;
+      this.frameWindowStart = performance.now();
       this.renderer.start();
     } catch (error) {
       this.handleMicrophoneFailure(
@@ -113,6 +190,9 @@ export class CantoApp {
     this.updateLevel(0);
     this.setNoteReadout(null);
     this.lastAnnouncedNote = null;
+    this.lastSample = null;
+    this.frameRate = 0;
+    this.refreshDiagnostics();
   }
 
   private handleMicrophoneFailure(error: MicrophoneError): void {
@@ -128,9 +208,23 @@ export class CantoApp {
 
   private handleSample(sample: PitchSample): void {
     this.buffer.add(sample);
+    this.lastSample = sample;
     this.updateLevel(sample.level);
     this.setStatus(MIC_STATUS_KEYS[sample.state]);
     this.setNoteReadout(sample);
+    this.countFrame();
+  }
+
+  /** Rolling analysis frame rate, reported by the diagnostics panel. */
+  private countFrame(): void {
+    this.frameCount += 1;
+    const now = performance.now();
+    const elapsed = now - this.frameWindowStart;
+    if (elapsed >= 1000) {
+      this.frameRate = (this.frameCount * 1000) / elapsed;
+      this.frameCount = 0;
+      this.frameWindowStart = now;
+    }
   }
 
   // --- readouts -----------------------------------------------------------
@@ -151,7 +245,7 @@ export class CantoApp {
 
     this.view.noteReadout.textContent = sample.note;
     const inTune = Math.abs(sample.cents ?? 100) <= IN_TUNE_CENTS;
-    const uncertain = sample.clarity < 0.85;
+    const uncertain = sample.held || sample.clarity < UNCERTAIN_CLARITY;
     // Text, not colour alone, carries the tuning state (item_005 AC6).
     this.view.tuningReadout.textContent = uncertain
       ? t('pitch.uncertain')
@@ -181,10 +275,64 @@ export class CantoApp {
       : t('a11y.noActiveNotes');
   }
 
+  // --- diagnostics (item_007) ---------------------------------------------
+
+  private toggleDiagnostics(): void {
+    this.diagnosticsOpen = !this.diagnosticsOpen;
+    this.view.diagnosticsPanel.classList.toggle('panel--hidden', !this.diagnosticsOpen);
+    this.view.diagnosticsButton.setAttribute('aria-expanded', String(this.diagnosticsOpen));
+    if (this.diagnosticsOpen) {
+      this.refreshDiagnostics();
+      this.diagnosticsTimer = window.setInterval(() => this.refreshDiagnostics(), DIAGNOSTICS_INTERVAL_MS);
+    } else if (this.diagnosticsTimer) {
+      window.clearInterval(this.diagnosticsTimer);
+      this.diagnosticsTimer = 0;
+    }
+  }
+
+  private refreshDiagnostics(): void {
+    if (!this.diagnosticsOpen) return;
+    const sample = this.lastSample;
+    const report = this.captureReport;
+    const thresholds = this.microphone.thresholds;
+
+    const rows: [string, string][] = [
+      [t('diag.state'), sample ? sample.state : t('diag.idle')],
+      [t('diag.note'), sample?.note ?? t('pitch.none')],
+      [t('diag.rms'), sample ? sample.rms.toFixed(4) : '—'],
+      [t('diag.level'), sample ? `${Math.round(sample.level * 100)}%` : '—'],
+      [t('diag.clarity'), sample ? sample.clarity.toFixed(2) : '—'],
+      [t('diag.held'), sample?.held ? t('diag.yes') : t('diag.no')],
+      [t('diag.frameRate'), this.frameRate ? this.frameRate.toFixed(0) : '—'],
+      [t('diag.sampleRate'), report ? `${report.sampleRate} Hz` : '—'],
+      [t('diag.device'), report?.label || '—'],
+      [
+        t('diag.processing'),
+        report ? (report.processingStillOn ? t('diag.processingOn') : t('diag.processingOff')) : '—',
+      ],
+      [t('diag.reapplied'), report?.reapplied ? t('diag.yes') : t('diag.no')],
+      [
+        t('diag.thresholds'),
+        `RMS ${thresholds.attackRms} / ${thresholds.releaseRms} · clarity ${thresholds.attackClarity} / ${thresholds.releaseClarity} · hold ${thresholds.holdMs} ms`,
+      ],
+    ];
+    renderDiagnostics(this.view.diagnosticsBody, rows);
+  }
+
+  private toggleHelp(): void {
+    const open = this.view.helpPanel.classList.contains('panel--hidden');
+    this.view.helpPanel.classList.toggle('panel--hidden', !open);
+    this.view.helpButton.setAttribute('aria-expanded', String(open));
+  }
+
   // --- controls -----------------------------------------------------------
 
   private bindControls(): void {
     this.view.micButton.addEventListener('click', () => void this.toggleMicrophone());
+    this.view.helpButton.addEventListener('click', () => this.toggleHelp());
+    this.view.diagnosticsButton.addEventListener('click', () => this.toggleDiagnostics());
+    this.view.helpCloseButton.addEventListener('click', () => this.closePanels());
+    this.view.diagnosticsCloseButton.addEventListener('click', () => this.closePanels());
 
     this.view.instrumentSelect.addEventListener('change', () => {
       const value = this.view.instrumentSelect.value;
@@ -217,20 +365,25 @@ export class CantoApp {
     this.view.octaveUpButton.addEventListener('click', () => this.shiftOctave(1));
 
     window.addEventListener('keydown', (event) => {
-      if (event.target !== document.body && event.target !== null) {
-        if (event.target instanceof HTMLElement && event.target.closest('input, select, textarea')) return;
-      }
+      if (event.target instanceof HTMLElement && event.target.closest('input, select, textarea')) return;
       if (event.key === 'ArrowLeft') this.shiftOctave(-1);
       if (event.key === 'ArrowRight') this.shiftOctave(1);
+      if (event.key === 'Escape') this.closePanels();
     });
 
-    window.addEventListener('resize', () => this.renderer.resize());
-    window.addEventListener('orientationchange', () => this.renderer.resize());
+    window.addEventListener('resize', () => this.scheduleHeightBudget());
+    window.addEventListener('orientationchange', () => this.scheduleHeightBudget());
     // Releasing the microphone when the view is hidden keeps the recording
     // indicator honest and frees the device (item_003 AC4).
     document.addEventListener('visibilitychange', () => {
       if (document.hidden && this.microphone.running) this.stopMicrophone();
     });
+  }
+
+  private closePanels(): void {
+    this.view.helpPanel.classList.add('panel--hidden');
+    this.view.helpButton.setAttribute('aria-expanded', 'false');
+    if (this.diagnosticsOpen) this.toggleDiagnostics();
   }
 
   private shiftOctave(direction: number): void {

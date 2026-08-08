@@ -13,6 +13,8 @@ function tracking(timestamp: number, exactMidi: number): PitchSample {
     cents: 0,
     clarity: 0.9,
     level: 0.5,
+    rms: 0.05,
+    held: false,
   };
 }
 
@@ -27,6 +29,8 @@ function quiet(timestamp: number, state: PitchSample['state'] = 'silence'): Pitc
     cents: null,
     clarity: 0,
     level: 0,
+    rms: 0,
+    held: false,
   };
 }
 

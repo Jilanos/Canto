@@ -14,7 +14,7 @@ import { HISTORY_MS, TraceBuffer, ageFraction } from './trace-buffer';
 import { THEME } from './theme';
 
 /** Clarity below this is drawn as an uncertain trace (item_004 AC4). */
-const UNCERTAIN_CLARITY = 0.85;
+export const UNCERTAIN_CLARITY = 0.85;
 
 export class TraceRenderer {
   private readonly canvas: HTMLCanvasElement;
@@ -227,7 +227,8 @@ export class TraceRenderer {
       x: normalisedX * this.width,
       y: this.height - age * this.height,
       inTune: Math.abs(sample.cents ?? 100) <= IN_TUNE_CENTS,
-      uncertain: sample.clarity < UNCERTAIN_CLARITY,
+      // A frame held through the grace period is a guess, not a measurement.
+      uncertain: sample.held || sample.clarity < UNCERTAIN_CLARITY,
     };
   }
 }

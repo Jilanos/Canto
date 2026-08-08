@@ -5,6 +5,11 @@
  * buffer or sent anywhere (item_003 scope, item_005 AC5). Stopping the pipeline
  * releases the media tracks, which is what turns the browser's recording
  * indicator off (item_003 AC4).
+ *
+ * Two details exist because of the sustained-note dropout of item_007:
+ * the voice-processing constraints are verified after the fact and re-applied when
+ * the browser ignored them, and the analyser branch is terminated into a muted
+ * output so every engine keeps pulling audio through it.
  */
 
 import { PitchTracker, type PitchSample, type TrackerOptions } from '../pitch/tracker';
@@ -12,6 +17,16 @@ import { DEFAULT_PITCH_OPTIONS, estimatePitch } from '../pitch/yin';
 
 /** ~43 ms at 48 kHz: long enough for C2, short enough for the latency budget. */
 export const ANALYSIS_WINDOW = 2048;
+
+/**
+ * Voice processing fights pitch detection: noise suppression treats a steady vowel
+ * as stationary noise and gain control rides a held note down.
+ */
+const RAW_AUDIO_CONSTRAINTS: MediaTrackConstraints = {
+  echoCancellation: false,
+  noiseSuppression: false,
+  autoGainControl: false,
+};
 
 export type MicrophoneFailure = 'denied' | 'unavailable' | 'interrupted' | 'unsupported';
 
@@ -25,9 +40,28 @@ export class MicrophoneError extends Error {
   }
 }
 
+/**
+ * What the browser actually granted, as opposed to what was asked for. Read by the
+ * diagnostics panel; the answer decides whether a dropout comes from the capture
+ * chain or from our own thresholds.
+ */
+export interface CaptureReport {
+  sampleRate: number;
+  /** Settings reported by the track, limited to what matters for detection. */
+  echoCancellation: boolean | null;
+  noiseSuppression: boolean | null;
+  autoGainControl: boolean | null;
+  /** True when a second attempt was needed to turn voice processing off. */
+  reapplied: boolean;
+  /** True when voice processing is still on despite both attempts. */
+  processingStillOn: boolean;
+  label: string;
+}
+
 export interface MicrophoneHandlers {
   onSample(sample: PitchSample): void;
   onFailure(error: MicrophoneError): void;
+  onCaptureReport?(report: CaptureReport): void;
 }
 
 export interface MicrophoneOptions {
@@ -43,8 +77,10 @@ export class MicrophonePipeline {
   private stream: MediaStream | null = null;
   private source: MediaStreamAudioSourceNode | null = null;
   private analyser: AnalyserNode | null = null;
+  private sink: GainNode | null = null;
   private frame = 0;
   private trackEndedHandler: (() => void) | null = null;
+  private report: CaptureReport | null = null;
 
   constructor(context: AudioContext, handlers: MicrophoneHandlers, options: MicrophoneOptions = {}) {
     this.context = context;
@@ -54,6 +90,15 @@ export class MicrophonePipeline {
 
   get running(): boolean {
     return this.stream !== null;
+  }
+
+  /** Last capture report, or null when the microphone has never been started. */
+  get captureReport(): CaptureReport | null {
+    return this.report;
+  }
+
+  get thresholds(): Readonly<TrackerOptions> {
+    return this.tracker.thresholds;
   }
 
   /**
@@ -68,15 +113,7 @@ export class MicrophonePipeline {
 
     let stream: MediaStream;
     try {
-      stream = await navigator.mediaDevices.getUserMedia({
-        audio: {
-          // Voice processing would fight the pitch detector.
-          echoCancellation: false,
-          noiseSuppression: false,
-          autoGainControl: false,
-        },
-        video: false,
-      });
+      stream = await navigator.mediaDevices.getUserMedia({ audio: { ...RAW_AUDIO_CONSTRAINTS }, video: false });
     } catch (error) {
       throw new MicrophoneError(classify(error), error instanceof Error ? error.message : undefined);
     }
@@ -85,13 +122,22 @@ export class MicrophonePipeline {
 
     this.stream = stream;
     this.tracker.reset();
+    this.report = await this.inspectCapture(stream);
+    this.handlers.onCaptureReport?.(this.report);
+
     this.source = this.context.createMediaStreamSource(stream);
     this.analyser = this.context.createAnalyser();
     this.analyser.fftSize = ANALYSIS_WINDOW;
     this.analyser.smoothingTimeConstant = 0;
     this.source.connect(this.analyser);
-    // The analyser is intentionally not connected to the destination: monitoring the
-    // microphone through the speakers would feed straight back into the detector.
+
+    // Terminating the branch into a silent output keeps every engine pulling audio
+    // through the analyser. The gain is zero, so the microphone is never monitored
+    // through the speakers and cannot feed back into the detector.
+    this.sink = this.context.createGain();
+    this.sink.gain.value = 0;
+    this.analyser.connect(this.sink);
+    this.sink.connect(this.context.destination);
 
     this.trackEndedHandler = () => {
       this.stop();
@@ -122,7 +168,49 @@ export class MicrophonePipeline {
     this.source = null;
     this.analyser?.disconnect();
     this.analyser = null;
+    this.sink?.disconnect();
+    this.sink = null;
     this.tracker.reset();
+  }
+
+  /**
+   * Reads back what the track really applied and retries once when the browser
+   * ignored the request. Some engines accept the constraints at `getUserMedia` time
+   * and still report processing as enabled.
+   */
+  private async inspectCapture(stream: MediaStream): Promise<CaptureReport> {
+    const track = stream.getAudioTracks()[0];
+    if (!track) {
+      return {
+        sampleRate: this.context.sampleRate,
+        echoCancellation: null,
+        noiseSuppression: null,
+        autoGainControl: null,
+        reapplied: false,
+        processingStillOn: false,
+        label: '',
+      };
+    }
+
+    let settings = readSettings(track);
+    let reapplied = false;
+    if (isProcessingOn(settings)) {
+      try {
+        await track.applyConstraints({ ...RAW_AUDIO_CONSTRAINTS });
+        reapplied = true;
+        settings = readSettings(track);
+      } catch {
+        // Constraint unsupported: the report below records that processing stayed on.
+      }
+    }
+
+    return {
+      sampleRate: this.context.sampleRate,
+      ...settings,
+      reapplied,
+      processingStillOn: isProcessingOn(settings),
+      label: track.label,
+    };
   }
 
   private readonly tick = (): void => {
@@ -135,6 +223,21 @@ export class MicrophonePipeline {
 
     this.frame = requestAnimationFrame(this.tick);
   };
+}
+
+type ProcessingSettings = Pick<CaptureReport, 'echoCancellation' | 'noiseSuppression' | 'autoGainControl'>;
+
+function readSettings(track: MediaStreamTrack): ProcessingSettings {
+  const settings = track.getSettings() as Partial<Record<keyof ProcessingSettings, boolean>>;
+  return {
+    echoCancellation: settings.echoCancellation ?? null,
+    noiseSuppression: settings.noiseSuppression ?? null,
+    autoGainControl: settings.autoGainControl ?? null,
+  };
+}
+
+function isProcessingOn(settings: ProcessingSettings): boolean {
+  return settings.noiseSuppression === true || settings.autoGainControl === true || settings.echoCancellation === true;
 }
 
 function classify(error: unknown): MicrophoneFailure {

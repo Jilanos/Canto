@@ -55,6 +55,9 @@ start with `logics/INDEX.md`.
 - **Honest feedback.** Silence breaks the line, a quiet or ambiguous signal is
   never presented as a confident note, and the ±15 cents "in tune" band is shown
   by shape and thickness as well as colour.
+- **One screen.** The keyboard, the detected note and the trace are always visible
+  together; nothing scrolls, and the help and diagnostics panels float above rather
+  than pushing the keyboard away.
 - **Installable and offline.** After the first load, the whole practice mode
   works with no network at all.
 
@@ -119,6 +122,9 @@ No tutorial, no exercise, no score — just the loop.
 | **Mute piano** | Silences the instrument, leaves the microphone running |
 | **Stop all sound** | Releases every voice immediately |
 | **Stop microphone** | Ends capture and releases the media tracks |
+| **Help and privacy** | Keyboard map, headphone advice and the privacy statement |
+| **Diagnostics** | Live capture values — see below |
+| `Esc` | Closes an open panel |
 
 ### States you may see
 
@@ -130,6 +136,22 @@ No tutorial, no exercise, no score — just the loop.
 | *Microphone access was refused* | Re-allow it in the browser's site settings |
 | *No microphone was found* | No input device available |
 | *The microphone input stopped* | The device was disconnected or taken over |
+
+### Diagnostics panel
+
+Open **Diagnostics** in the header to see what the audio pipeline is really doing:
+state, detected note, raw RMS, level, clarity, whether the current frame is being
+held through the grace period, analysis frame rate, sample rate, input device, and —
+the useful one — whether the browser actually honoured the request to turn echo
+cancellation, noise suppression and gain control **off**.
+
+That last row matters. Voice processing fights pitch detection: noise suppression
+treats a steady vowel as stationary noise and gain control rides a held note down.
+Canto asks for it to be disabled, verifies what was granted, and re-applies the
+constraints once if the browser ignored them. If the panel still says *Still on*,
+a dropout on a held note comes from the capture chain, not from Canto's thresholds.
+
+Nothing in the panel is recorded or sent anywhere.
 
 ### Speakers vs headphones
 
@@ -177,6 +199,7 @@ Four boundaries are kept deliberately clean so a future song mode can reuse them
 | `src/render/trace-renderer.ts` | Canvas 2D note-time trace |
 | `src/ui/`, `src/app.ts` | Layout, controls, user-visible state machine |
 | `src/state/preferences.ts` | The only persistence |
+| `src/ui/height-budget.ts` | Splits the viewport between the trace and the keyboard |
 
 Three decisions are worth knowing before changing anything:
 
@@ -188,6 +211,15 @@ Three decisions are worth knowing before changing anything:
 - **Pitch analysis is a pure function.** `estimatePitch(buffer, options)` takes a
   `Float32Array`, so accuracy and cost are measured in unit tests, with no
   browser and no microphone involved.
+- **Tracking thresholds are asymmetric.** Starting to track a note demands a clearly
+  audible, clearly periodic window; staying tracked demands much less, and a short
+  grace period rides out isolated bad frames. That is what stops a held note from
+  dying mid-phrase when its captured level drifts down. True silence still drops out
+  immediately, so releasing a note never leaves a ghost.
+- **The layout is computed, not guessed.** `allocateHeights()` receives the measured
+  chrome and returns the trace and keyboard heights, applied as CSS custom
+  properties. CSS alone cannot promise a scroll-free screen because the chrome grows
+  with its own copy.
 
 ### Technology
 
@@ -209,7 +241,7 @@ broken offline mode.
 │   └── icons/                  Generated, git-ignored
 ├── scripts/generate-icons.mjs  Draws and PNG-encodes the placeholder icons
 ├── src/
-│   ├── app.ts                  Controller wiring every module together
+│   ├── app.ts                  Controller wiring every module together, owns the height budget
 │   ├── main.ts                 Entry point, service worker registration
 │   ├── audio/                  Instrument engine, microphone pipeline
 │   ├── music/                  Note primitives, keyboard geometry
@@ -218,7 +250,7 @@ broken offline mode.
 │   ├── service-worker/         Registration + build-time SW template
 │   ├── state/                  Preference persistence
 │   ├── styles/app.css          Whole stylesheet
-│   ├── ui/                     Piano keyboard, app shell markup
+│   ├── ui/                     Piano keyboard, app shell markup, height budget
 │   └── i18n/en.json            Every visible string
 ├── docs/validation-protocol.md Device validation procedure
 └── logics/                     Workflow docs: request, product, ADR, backlog, task
@@ -247,6 +279,8 @@ npm test          # 91 tests across 9 files
 | Detection | `pitch/yin.test.ts` | <5 cents on every semitone C2–C6 (mean <1.5), no octave error on harmonic tones, noise tolerance, silence rejected, per-frame cost |
 | Validity | `pitch/tracker.test.ts` | Silence / weak / unstable / tracking thresholds, octave-slip rejection |
 | Trace | `render/trace-buffer.test.ts` | Eight-second window, breaks on silence, dropped frames and implausible jumps |
+| Layout | `ui/height-budget.test.ts` | Keyboard and trace stay above their minimums on every target viewport, and the stylesheet's compact chrome budget is enforced |
+| Sustained notes | `pitch/tracker.test.ts` | A 20 s held note with a decaying level never drops out, while stopping drops out at once |
 | Persistence | `state/preferences.test.ts` | Only the allow-listed preferences are ever written |
 | Copy | `i18n/catalogue.test.ts` | No missing or unused catalogue key |
 | UI | `ui/piano.test.ts`, `ui/view.test.ts` | Stuck-note prevention on every input path, accessible labels, control wiring |

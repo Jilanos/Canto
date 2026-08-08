@@ -28,6 +28,8 @@ Covers, without any browser or device:
 | Persistence allow-list | `src/state/preferences.test.ts` | only instrument, volume, mute, octave |
 | Every visible string comes from the English catalogue | `src/i18n/catalogue.test.ts` | no missing or unused keys |
 | UI states, stuck-note prevention, accessible labels | `src/ui/*.test.ts` | per `item_002` AC3, AC4 |
+| Height budget on target viewports | `src/ui/height-budget.test.ts` | keyboard and trace both above their minimums, nothing scrolls |
+| Sustained note does not drop out | `src/pitch/tracker.test.ts` | 20 s held note, decaying level, zero dropouts |
 
 ## 2. Manual: device runs
 
@@ -80,6 +82,23 @@ Then sing the same notes and confirm the reading is stable within a semitone.
 4. Sources of budget: ~43 ms analysis window, one animation frame of render,
    plus uncontrollable device input latency.
 
+### 2.4bis Sustained note and capture diagnostics (`item_007`)
+
+1. Open **Diagnostics** in the header. Note the *Voice processing* row: it says
+   whether the browser really turned echo cancellation, noise suppression and gain
+   control off, and whether the constraints had to be re-applied.
+2. Enable the microphone and hold one steady vowel for **at least 30 seconds**.
+   The trace must stay unbroken and *State* must stay `tracking` throughout.
+3. Watch *RMS* during the held note. Two different faults look identical on screen:
+   - RMS collapses towards zero → the capture chain is gating the signal. Record the
+     *Voice processing* row; that is the browser, not the thresholds.
+   - RMS stays healthy but the state leaves `tracking` → the thresholds are wrong.
+     Record the RMS value at the moment it drops.
+4. Stop singing: the state must return to `silence` immediately, with no lingering
+   note. *Held frame* may flash `Yes` for a fraction of a second — that is the grace
+   period — but must not stay on.
+5. Record the observed values per browser in the table below.
+
 ### 2.5 Fluidity and layout (`item_001` AC3; `item_004` AC5, AC7)
 
 1. Sing continuously for 30 s: the trace must stay smooth and the piano responsive.
@@ -87,6 +106,13 @@ Then sing the same notes and confirm the reading is stable within a semitone.
 3. Rotate the device: landscape is the recommended posture; portrait stays usable.
 4. Both visible octaves remain on screen; `←` / `→` and the octave buttons walk the
    whole C2–C6 range.
+5. **Single screen (`item_006`)**: the keyboard, the detected note and the trace are
+   visible together, with **no page scrolling**, in landscape, in portrait and on
+   desktop. Open **Help and privacy** and **Diagnostics**: both float over the trace
+   and never push the keyboard off screen.
+6. Resize the desktop window from tall to short: the trace shrinks first, the
+   keyboard keeps a playable height, and secondary labels collapse rather than the
+   layout breaking.
 
 ### 2.6 Instrument and no stuck notes (`item_002`)
 
@@ -113,11 +139,11 @@ Then sing the same notes and confirm the reading is stable within a semitone.
 
 ## 3. Result log
 
-| Date | Build | Browser / device | Sections run | Latency median | Result | Notes |
-| --- | --- | --- | --- | --- | --- | --- |
-| | | Chrome Android | | | not run | |
-| | | Firefox desktop | | | not run | |
-| | | Firefox Android | | | not run | |
+| Date | Build | Browser / device | Sections run | Latency median | Held-note RMS | Voice processing | Result | Notes |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| | | Chrome Android | | | | | not run | |
+| | | Firefox desktop | | | | | not run | |
+| | | Firefox Android | | | | | not run | |
 
 Section 1 was run on the development machine and passes (91 automated checks).
 Sections 2.1–2.8 require the target devices and are outstanding.

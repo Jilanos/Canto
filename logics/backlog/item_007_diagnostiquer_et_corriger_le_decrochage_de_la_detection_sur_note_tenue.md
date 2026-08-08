@@ -1,10 +1,10 @@
 ## item_007_diagnostiquer_et_corriger_le_decrochage_de_la_detection_sur_note_tenue - Diagnostiquer et corriger le decrochage de la detection sur note tenue
 > From version: 0.1.0
 > Schema version: 1.0
-> Status: Ready
+> Status: In progress
 > Understanding: 90%
 > Confidence: 85%
-> Progress: 0%
+> Progress: 85%
 > Complexity: High
 > Theme: Fiabilite de la detection
 > Reminder: Update status/understanding/confidence/progress and linked request/task references when you edit this doc.

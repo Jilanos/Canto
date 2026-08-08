@@ -12,7 +12,7 @@ const app = mountApp(root);
 
 /** Reveals the offline note once a service worker is in control of the page. */
 function markReadyOffline(): void {
-  document.querySelector('.app__hint--hidden')?.classList.remove('app__hint--hidden');
+  document.querySelector('.panel__note--hidden')?.classList.remove('panel__note--hidden');
 }
 
 // The service worker only exists in a production build; the dev server serves

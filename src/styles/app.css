@@ -1,6 +1,13 @@
 /*
- * Technical, studio-leaning visual direction (item_005). Landscape is the
- * recommended mobile layout and portrait stays usable (item_001 AC3).
+ * Technical, studio-leaning visual direction (item_005).
+ *
+ * Layout rule (item_006): the app is a grid the height of the viewport. Only the
+ * trace and the keyboard flex, and their heights are set as custom properties by
+ * the controller from the measured chrome. Nothing scrolls, so the keyboard and the
+ * detected note are always visible together.
+ *
+ * The chrome must stay within COMPACT_CHROME_BUDGET once `data-compact="true"`;
+ * `src/ui/height-budget.test.ts` holds that promise for a 320 px landscape phone.
  */
 
 :root {
@@ -16,6 +23,11 @@
   --warn: #ffb86b;
   --radius: 10px;
   --focus: #8fb4ff;
+  --gap: 8px;
+  --pad: 10px;
+  /* Overwritten by the controller; these are the pre-measurement fallbacks. */
+  --trace-height: 160px;
+  --piano-height: 120px;
   color-scheme: dark;
 }
 
@@ -31,17 +43,32 @@ body {
   color: var(--text);
   font-family: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
   font-size: 15px;
-  line-height: 1.45;
+  line-height: 1.4;
   -webkit-text-size-adjust: 100%;
   overscroll-behavior: none;
 }
 
+body {
+  overflow: hidden;
+}
+
 .app {
+  position: relative;
   display: flex;
   flex-direction: column;
-  gap: 12px;
-  min-height: 100%;
-  padding: 12px max(12px, env(safe-area-inset-left)) max(12px, env(safe-area-inset-bottom));
+  gap: var(--gap);
+  height: 100vh;
+  height: 100dvh;
+  padding: var(--pad) max(var(--pad), env(safe-area-inset-left)) max(var(--pad), env(safe-area-inset-bottom));
+  overflow: hidden;
+}
+
+/* Last resort: if even the minimums do not fit, scrolling beats an unplayable
+   keyboard. The controller sets this flag from the height budget. */
+.app[data-overflowing='true'] {
+  height: auto;
+  min-height: 100dvh;
+  overflow-y: auto;
 }
 
 .visually-hidden {
@@ -64,87 +91,102 @@ body {
 
 .app__header {
   display: flex;
-  align-items: baseline;
+  align-items: center;
   justify-content: space-between;
-  gap: 12px;
-  flex-wrap: wrap;
+  gap: var(--gap);
+  flex: 0 0 auto;
+}
+
+.app__header-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--gap);
 }
 
 .app__title {
   margin: 0;
-  font-size: 1.2rem;
-  letter-spacing: 0.16em;
+  font-size: 1rem;
+  letter-spacing: 0.18em;
   text-transform: uppercase;
-}
-
-.app__tagline {
-  margin: 0;
-  color: var(--text-dim);
-  font-size: 0.82rem;
 }
 
 .badge {
   border: 1px solid var(--line);
   border-radius: 999px;
-  padding: 3px 10px;
+  padding: 2px 9px;
   color: var(--accent);
-  font-size: 0.72rem;
+  font-size: 0.68rem;
   letter-spacing: 0.08em;
   text-transform: uppercase;
+  white-space: nowrap;
 }
 
 .banner {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: var(--gap);
   border: 1px solid var(--line);
   border-radius: var(--radius);
   background: var(--surface-raised);
-  padding: 8px 12px;
+  padding: 6px 10px;
+  flex: 0 0 auto;
 }
 
 .banner--hidden {
   display: none;
 }
 
-/* Pitch panel ------------------------------------------------------------- */
+/* Status bar -------------------------------------------------------------- */
 
-.panel {
+.statusbar {
   display: flex;
-  gap: 16px;
-  flex-wrap: wrap;
   align-items: center;
-  justify-content: space-between;
+  gap: 10px 16px;
+  flex-wrap: wrap;
+  flex: 0 0 auto;
   border: 1px solid var(--line);
   border-radius: var(--radius);
   background: var(--surface-raised);
-  padding: 12px 14px;
+  padding: 8px 12px;
+}
+
+.statusbar__mic {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.mic__status {
+  margin: 0;
+  color: var(--text-dim);
+  font-size: 0.8rem;
+  min-width: 0;
+}
+
+.mic__status--error {
+  color: var(--warn);
 }
 
 .pitch {
   display: flex;
   align-items: baseline;
-  gap: 10px;
-  min-width: 200px;
-}
-
-.pitch__label {
-  color: var(--text-dim);
-  font-size: 0.74rem;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
+  gap: 8px;
+  margin-left: auto;
 }
 
 .pitch__note {
-  font-size: 2.1rem;
+  font-size: 1.7rem;
   font-variant-numeric: tabular-nums;
   font-weight: 600;
-  min-width: 3.4ch;
+  min-width: 3.2ch;
+  text-align: right;
 }
 
 .pitch__tuning {
-  font-size: 0.8rem;
+  font-size: 0.78rem;
   color: var(--text-dim);
+  min-width: 8ch;
 }
 
 .pitch__tuning--in-tune {
@@ -159,37 +201,13 @@ body {
   color: var(--warn);
 }
 
-.mic {
-  display: grid;
-  grid-template-columns: auto 1fr;
-  align-items: center;
-  gap: 8px 12px;
-  flex: 1 1 320px;
-}
-
-.mic__status {
-  margin: 0;
-  color: var(--text-dim);
-  font-size: 0.85rem;
-}
-
-.mic__status--error {
-  color: var(--warn);
-}
-
-.mic__consent {
-  grid-column: 1 / -1;
-  margin: 0;
-  color: var(--text-dim);
-  font-size: 0.76rem;
-}
-
 .level {
-  grid-column: 1 / -1;
+  width: 110px;
   height: 6px;
   border-radius: 999px;
   background: rgba(255, 255, 255, 0.08);
   overflow: hidden;
+  flex: 0 0 auto;
 }
 
 .level__fill {
@@ -199,36 +217,12 @@ body {
   transition: width 80ms linear;
 }
 
-/* Trace + piano ----------------------------------------------------------- */
-
-.trace {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  flex: 1 1 auto;
-  min-height: 180px;
-}
-
-.trace__canvas {
-  display: block;
-  width: 100%;
-  height: 100%;
-  min-height: 160px;
-  flex: 1 1 auto;
-  border: 1px solid var(--line);
-  border-bottom: none;
-  border-radius: var(--radius) var(--radius) 0 0;
-  background: var(--surface);
-  touch-action: none;
-}
-
 .legend {
   display: flex;
   flex-wrap: wrap;
-  gap: 6px 16px;
+  gap: 4px 12px;
   color: var(--text-dim);
-  font-size: 0.74rem;
-  order: -1;
+  font-size: 0.72rem;
 }
 
 .legend__item {
@@ -238,9 +232,10 @@ body {
 }
 
 .legend__swatch {
-  width: 18px;
+  width: 16px;
   height: 4px;
   border-radius: 2px;
+  flex: 0 0 auto;
 }
 
 .legend__swatch--in-tune {
@@ -257,13 +252,33 @@ body {
   background: repeating-linear-gradient(90deg, var(--accent-alt) 0 3px, transparent 3px 7px);
 }
 
+/* Trace and keyboard: the only sized blocks ------------------------------- */
+
+.trace {
+  flex: 0 0 auto;
+  height: var(--trace-height);
+  min-height: 0;
+}
+
+.trace__canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+  border: 1px solid var(--line);
+  border-bottom: none;
+  border-radius: var(--radius) var(--radius) 0 0;
+  background: var(--surface);
+  touch-action: none;
+}
+
 .piano-section {
   flex: 0 0 auto;
+  height: var(--piano-height);
 }
 
 .piano {
   position: relative;
-  height: clamp(96px, 22vh, 168px);
+  height: 100%;
   border: 1px solid var(--line);
   border-radius: 0 0 var(--radius) var(--radius);
   background: var(--surface-raised);
@@ -276,7 +291,7 @@ body {
   position: absolute;
   top: 0;
   margin: 0;
-  padding: 0 0 6px;
+  padding: 0 0 5px;
   border: 1px solid rgba(0, 0, 0, 0.45);
   font: inherit;
   cursor: pointer;
@@ -310,7 +325,7 @@ body {
 }
 
 .piano__label {
-  font-size: 0.62rem;
+  font-size: 0.6rem;
   letter-spacing: 0.02em;
   pointer-events: none;
 }
@@ -320,18 +335,19 @@ body {
 .controls {
   display: flex;
   flex-wrap: wrap;
-  gap: 12px 18px;
   align-items: end;
+  gap: 8px 14px;
+  flex: 0 0 auto;
   border: 1px solid var(--line);
   border-radius: var(--radius);
   background: var(--surface-raised);
-  padding: 10px 14px;
+  padding: 8px 12px;
 }
 
 .control {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 3px;
 }
 
 .control--actions {
@@ -341,7 +357,7 @@ body {
 
 .control__label {
   color: var(--text-dim);
-  font-size: 0.72rem;
+  font-size: 0.68rem;
   letter-spacing: 0.08em;
   text-transform: uppercase;
 }
@@ -349,7 +365,7 @@ body {
 .control__group {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
 }
 
 .control__value {
@@ -359,29 +375,30 @@ body {
 }
 
 .control__input {
-  min-height: 36px;
+  min-height: 34px;
   border: 1px solid var(--line);
   border-radius: 8px;
   background: var(--surface);
   color: var(--text);
-  padding: 4px 8px;
+  padding: 3px 8px;
 }
 
-input[type='range'].control__input {
+.control__input--range {
   padding: 0;
-  min-width: 140px;
+  min-width: 120px;
   accent-color: var(--accent);
 }
 
 .button {
-  min-height: 40px;
-  padding: 8px 14px;
+  min-height: 36px;
+  padding: 6px 12px;
   border: 1px solid var(--line);
   border-radius: 8px;
   background: var(--surface);
   color: var(--text);
   font: inherit;
   cursor: pointer;
+  white-space: nowrap;
 }
 
 .button:hover:not(:disabled) {
@@ -400,14 +417,21 @@ input[type='range'].control__input {
   font-weight: 600;
 }
 
+.button--ghost {
+  min-height: 30px;
+  padding: 3px 10px;
+  font-size: 0.76rem;
+  color: var(--text-dim);
+}
+
 .button--icon {
-  min-width: 40px;
-  font-size: 1.1rem;
+  min-width: 36px;
+  font-size: 1.05rem;
   line-height: 1;
 }
 
 .banner__action {
-  min-height: 32px;
+  min-height: 30px;
   padding: 4px 12px;
   border: 1px solid var(--line);
   border-radius: 8px;
@@ -417,50 +441,93 @@ input[type='range'].control__input {
   cursor: pointer;
 }
 
-/* Footer ------------------------------------------------------------------ */
+/* Overlay panels: outside the height budget by construction --------------- */
 
-.app__footer {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 4px 18px;
+.panel {
+  position: absolute;
+  right: var(--pad);
+  top: calc(var(--pad) + 40px);
+  z-index: 10;
+  max-width: min(420px, calc(100vw - 2 * var(--pad)));
+  max-height: calc(100dvh - 2 * var(--pad) - 40px);
+  overflow-y: auto;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--surface-raised);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.55);
+  padding: 12px 14px;
   color: var(--text-dim);
-  font-size: 0.74rem;
+  font-size: 0.8rem;
 }
 
-.app__footer p {
+.panel--hidden {
+  display: none;
+}
+
+.panel p {
+  margin: 0 0 8px;
+}
+
+.panel__lead {
+  color: var(--text);
+}
+
+.panel__note--hidden {
+  display: none;
+}
+
+.diag {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 4px 12px;
   margin: 0;
+  font-variant-numeric: tabular-nums;
 }
 
-.app__hint {
-  flex: 1 1 100%;
+.diag__label {
+  color: var(--text-dim);
 }
 
-/* Landscape is the recommended mobile posture: give the trace the height. */
-@media (orientation: landscape) and (max-height: 560px) {
-  .app {
-    gap: 8px;
-    padding: 8px;
-  }
-
-  .app__tagline,
-  .mic__consent,
-  .app__hint {
-    display: none;
-  }
-
-  .piano {
-    height: clamp(84px, 26vh, 140px);
-  }
+.diag__value {
+  margin: 0;
+  color: var(--text);
+  overflow-wrap: anywhere;
 }
 
-@media (orientation: portrait) and (max-width: 520px) {
-  .panel {
-    gap: 10px;
-  }
+/* Compact mode: the controller sets it when the essentials would not fit --- */
 
-  .pitch__note {
-    font-size: 1.7rem;
-  }
+.app[data-compact='true'] {
+  --gap: 6px;
+  --pad: 6px;
+}
+
+.app[data-compact='true'] .badge,
+.app[data-compact='true'] .legend__text,
+.app[data-compact='true'] .control__label,
+.app[data-compact='true'] .mic__status {
+  display: none;
+}
+
+.app[data-compact='true'] .app__title {
+  font-size: 0.82rem;
+}
+
+.app[data-compact='true'] .statusbar,
+.app[data-compact='true'] .controls {
+  padding: 4px 8px;
+  gap: 6px 10px;
+  flex-wrap: nowrap;
+  overflow-x: auto;
+}
+
+.app[data-compact='true'] .pitch__note {
+  font-size: 1.3rem;
+}
+
+.app[data-compact='true'] .button,
+.app[data-compact='true'] .control__input {
+  min-height: 30px;
+  padding: 3px 9px;
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -469,6 +536,7 @@ input[type='range'].control__input {
   }
 }
 
-.app__hint--hidden {
-  display: none;
+.panel__close {
+  float: right;
+  margin: -4px -4px 4px 8px;
 }

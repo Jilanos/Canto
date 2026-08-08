@@ -1,12 +1,13 @@
 {
   "app": {
     "name": "Canto",
-    "tagline": "Sing in tune, on your device",
     "offlineBadge": "Runs locally",
     "offlineHint": "Audio analysis, instruments and display all run in this browser. Nothing is recorded or uploaded.",
     "installedOffline": "Ready offline. You can practise without a network connection.",
     "updateAvailable": "A new version is ready. Reload to update.",
-    "updateAction": "Reload"
+    "updateAction": "Reload",
+    "help": "Help and privacy",
+    "close": "Close"
   },
   "mic": {
     "start": "Enable microphone",
@@ -63,5 +64,27 @@
   "footer": {
     "privacy": "No account, no server, no audio leaves this device.",
     "scope": "Free practice mode only."
+  },
+  "diag": {
+    "toggle": "Diagnostics",
+    "title": "Capture diagnostics",
+    "hint": "Live values from the local audio pipeline. Nothing here is recorded or sent.",
+    "state": "State",
+    "note": "Detected note",
+    "level": "Level",
+    "rms": "RMS",
+    "clarity": "Clarity",
+    "held": "Held frame",
+    "frameRate": "Analysis frames per second",
+    "sampleRate": "Sample rate",
+    "device": "Input device",
+    "processing": "Voice processing",
+    "processingOff": "Off, as requested",
+    "processingOn": "Still on: the browser kept echo cancellation, noise suppression or gain control",
+    "reapplied": "Constraints re-applied after the browser ignored them",
+    "thresholds": "Thresholds (attack / release)",
+    "idle": "Microphone off",
+    "yes": "Yes",
+    "no": "No"
   }
 }

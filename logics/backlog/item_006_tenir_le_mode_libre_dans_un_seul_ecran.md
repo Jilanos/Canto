@@ -1,10 +1,10 @@
 ## item_006_tenir_le_mode_libre_dans_un_seul_ecran - Tenir le mode libre dans un seul ecran
 > From version: 0.1.0
 > Schema version: 1.0
-> Status: Ready
+> Status: In progress
 > Understanding: 90%
 > Confidence: 85%
-> Progress: 0%
+> Progress: 85%
 > Complexity: Medium
 > Theme: Mise en page
 > Reminder: Update status/understanding/confidence/progress and linked request/task references when you edit this doc.

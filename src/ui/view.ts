@@ -1,6 +1,11 @@
 /**
- * Builds the single-screen free-practice layout (item_001, item_005) and exposes the
- * elements the controller drives. All copy comes from the English catalogue.
+ * Builds the single-screen free-practice layout (item_001, item_005, item_006) and
+ * exposes the elements the controller drives. All copy comes from the English
+ * catalogue.
+ *
+ * Layout contract (item_006): only the trace and the keyboard flex. Everything else
+ * is fixed-height chrome, and every block that is not needed to run the loop lives
+ * in an overlay panel so that opening it cannot push the keyboard off screen.
  */
 
 import { INSTRUMENT_IDS, type InstrumentId } from '../audio/instruments';
@@ -13,8 +18,15 @@ const INSTRUMENT_LABEL_KEYS: Record<InstrumentId, 'piano.instrumentStudioGrand' 
 };
 
 export interface AppView {
+  root: HTMLElement;
+  header: HTMLElement;
+  statusBar: HTMLElement;
+  controls: HTMLElement;
+  traceSection: HTMLElement;
+  pianoSection: HTMLElement;
+
   micButton: HTMLButtonElement;
-  micStatus: HTMLParagraphElement;
+  micStatus: HTMLElement;
   noteReadout: HTMLElement;
   tuningReadout: HTMLElement;
   levelMeter: HTMLElement;
@@ -22,6 +34,7 @@ export interface AppView {
   liveRegion: HTMLElement;
   canvas: HTMLCanvasElement;
   pianoRoot: HTMLElement;
+
   instrumentSelect: HTMLSelectElement;
   volumeInput: HTMLInputElement;
   muteButton: HTMLButtonElement;
@@ -29,6 +42,15 @@ export interface AppView {
   octaveDownButton: HTMLButtonElement;
   octaveUpButton: HTMLButtonElement;
   rangeReadout: HTMLElement;
+
+  helpButton: HTMLButtonElement;
+  helpPanel: HTMLElement;
+  helpCloseButton: HTMLButtonElement;
+  diagnosticsButton: HTMLButtonElement;
+  diagnosticsPanel: HTMLElement;
+  diagnosticsBody: HTMLElement;
+  diagnosticsCloseButton: HTMLButtonElement;
+
   updateBanner: HTMLElement;
   updateButton: HTMLButtonElement;
   offlineBadge: HTMLElement;
@@ -37,34 +59,39 @@ export interface AppView {
 
 export function renderApp(root: HTMLElement): AppView {
   root.replaceChildren();
+  root.classList.add('app');
 
+  // Header -----------------------------------------------------------------
   const header = element('header', 'app__header');
-  const brand = element('div', 'app__brand');
-  brand.append(text('h1', 'app__title', t('app.name')), text('p', 'app__tagline', t('app.tagline')));
+  const title = text('h1', 'app__title', t('app.name'));
   const offlineBadge = text('span', 'badge', t('app.offlineBadge'));
   offlineBadge.title = t('app.offlineHint');
-  header.append(brand, offlineBadge);
+  const helpButton = button('button button--ghost', t('app.help'));
+  helpButton.setAttribute('aria-expanded', 'false');
+  const diagnosticsButton = button('button button--ghost', t('diag.toggle'));
+  diagnosticsButton.setAttribute('aria-expanded', 'false');
+  const headerActions = element('div', 'app__header-actions');
+  headerActions.append(offlineBadge, helpButton, diagnosticsButton);
+  header.append(title, headerActions);
 
   const updateBanner = element('div', 'banner banner--hidden');
   updateBanner.setAttribute('role', 'status');
   const updateButton = button('banner__action', t('app.updateAction'));
   updateBanner.append(text('span', 'banner__text', t('app.updateAvailable')), updateButton);
 
-  // Live pitch panel -------------------------------------------------------
-  const pitchPanel = element('section', 'panel panel--pitch');
-  pitchPanel.setAttribute('aria-label', t('pitch.label'));
+  // Status bar: microphone, detected note, level, compact legend ------------
+  const statusBar = element('section', 'statusbar');
+  statusBar.setAttribute('aria-label', t('pitch.label'));
 
-  const noteBlock = element('div', 'pitch');
+  const micButton = button('button button--primary', t('mic.start'));
+  micButton.setAttribute('aria-pressed', 'false');
+
+  const pitchBlock = element('div', 'pitch');
   const noteReadout = text('output', 'pitch__note', t('pitch.none'));
   noteReadout.setAttribute('aria-live', 'off');
   const tuningReadout = text('span', 'pitch__tuning', '');
-  noteBlock.append(text('span', 'pitch__label', t('pitch.label')), noteReadout, tuningReadout);
+  pitchBlock.append(noteReadout, tuningReadout);
 
-  const micBlock = element('div', 'mic');
-  const micButton = button('button button--primary', t('mic.start'));
-  micButton.setAttribute('aria-pressed', 'false');
-  const micStatus = text('p', 'mic__status', t('mic.statusIdle')) as HTMLParagraphElement;
-  micStatus.setAttribute('role', 'status');
   const levelMeter = element('div', 'level');
   levelMeter.setAttribute('role', 'meter');
   levelMeter.setAttribute('aria-label', t('pitch.level'));
@@ -73,26 +100,30 @@ export function renderApp(root: HTMLElement): AppView {
   levelMeter.setAttribute('aria-valuenow', '0');
   const levelFill = element('div', 'level__fill');
   levelMeter.append(levelFill);
-  micBlock.append(micButton, micStatus, levelMeter, text('p', 'mic__consent', t('mic.consent')));
 
-  pitchPanel.append(noteBlock, micBlock);
+  const micStatus = text('p', 'mic__status', t('mic.statusIdle'));
+  micStatus.setAttribute('role', 'status');
 
-  // Trace ------------------------------------------------------------------
-  const traceSection = element('section', 'trace');
-  const canvas = document.createElement('canvas');
-  canvas.className = 'trace__canvas';
-  canvas.setAttribute('role', 'img');
-  canvas.setAttribute('aria-label', t('trace.label'));
+  const micBlock = element('div', 'statusbar__mic');
+  micBlock.append(micButton, micStatus);
+
   const legend = element('div', 'legend');
   legend.append(
     legendItem('legend__swatch--in-tune', t('trace.legendInTune')),
     legendItem('legend__swatch--off', t('trace.legendOff')),
     legendItem('legend__swatch--uncertain', t('trace.legendUncertain')),
-    text('span', 'legend__direction', t('trace.readingDirection')),
   );
-  traceSection.append(canvas, legend);
 
-  // Piano ------------------------------------------------------------------
+  statusBar.append(micBlock, pitchBlock, levelMeter, legend);
+
+  // Trace and keyboard: the only two flexible blocks ------------------------
+  const traceSection = element('section', 'trace');
+  const canvas = document.createElement('canvas');
+  canvas.className = 'trace__canvas';
+  canvas.setAttribute('role', 'img');
+  canvas.setAttribute('aria-label', `${t('trace.label')} ${t('trace.readingDirection')}`);
+  traceSection.append(canvas);
+
   const pianoSection = element('section', 'piano-section');
   const pianoRoot = element('div', '');
   pianoSection.append(pianoRoot);
@@ -112,7 +143,7 @@ export function renderApp(root: HTMLElement): AppView {
 
   const volumeInput = document.createElement('input');
   volumeInput.type = 'range';
-  volumeInput.className = 'control__input';
+  volumeInput.className = 'control__input control__input--range';
   volumeInput.id = 'volume';
   volumeInput.min = '0';
   volumeInput.max = '100';
@@ -138,26 +169,55 @@ export function renderApp(root: HTMLElement): AppView {
     groupOf(muteButton, panicButton),
   );
 
-  // Filled in once the service worker controls the page, so the offline promise is
-  // only claimed when it is actually true (item_001 AC2).
-  const offlineNote = text('p', 'app__hint app__hint--hidden', t('app.installedOffline'));
+  // Overlay panels: never part of the height budget -------------------------
+  const offlineNote = text('p', 'panel__note panel__note--hidden', t('app.installedOffline'));
 
-  const footer = element('footer', 'app__footer');
-  footer.append(
-    offlineNote,
+  const helpPanel = element('div', 'panel panel--hidden');
+  helpPanel.setAttribute('role', 'dialog');
+  helpPanel.setAttribute('aria-label', t('app.help'));
+  const helpCloseButton = button('button button--ghost panel__close', t('app.close'));
+  helpPanel.append(
+    helpCloseButton,
+    text('p', 'panel__lead', t('mic.consent')),
+    text('p', '', t('trace.readingDirection')),
+    text('p', '', t('trace.legendUncertain')),
+    text('p', '', t('piano.keyboardHint')),
+    text('p', '', t('mic.headphonesHint')),
     text('p', '', t('footer.privacy')),
     text('p', '', t('footer.scope')),
-    text('p', 'app__hint', t('piano.keyboardHint')),
-    text('p', 'app__hint', t('mic.headphonesHint')),
+    offlineNote,
   );
+
+  const diagnosticsPanel = element('div', 'panel panel--hidden panel--diagnostics');
+  diagnosticsPanel.setAttribute('role', 'dialog');
+  diagnosticsPanel.setAttribute('aria-label', t('diag.title'));
+  const diagnosticsBody = element('dl', 'diag');
+  const diagnosticsCloseButton = button('button button--ghost panel__close', t('app.close'));
+  diagnosticsPanel.append(diagnosticsCloseButton, text('p', 'panel__lead', t('diag.hint')), diagnosticsBody);
 
   const liveRegion = element('div', 'visually-hidden');
   liveRegion.setAttribute('role', 'status');
   liveRegion.setAttribute('aria-live', 'polite');
 
-  root.append(header, updateBanner, pitchPanel, traceSection, pianoSection, controls, footer, liveRegion);
+  root.append(
+    header,
+    updateBanner,
+    statusBar,
+    traceSection,
+    pianoSection,
+    controls,
+    helpPanel,
+    diagnosticsPanel,
+    liveRegion,
+  );
 
   return {
+    root,
+    header,
+    statusBar,
+    controls,
+    traceSection,
+    pianoSection,
     micButton,
     micStatus,
     noteReadout,
@@ -174,11 +234,27 @@ export function renderApp(root: HTMLElement): AppView {
     octaveDownButton,
     octaveUpButton,
     rangeReadout,
+    helpButton,
+    helpPanel,
+    helpCloseButton,
+    diagnosticsButton,
+    diagnosticsPanel,
+    diagnosticsBody,
+    diagnosticsCloseButton,
     updateBanner,
     updateButton,
     offlineBadge,
     offlineNote,
   };
+}
+
+/** Replaces the diagnostics rows in place; called at a throttled rate. */
+export function renderDiagnostics(body: HTMLElement, rows: readonly [string, string][]): void {
+  const fragment = document.createDocumentFragment();
+  for (const [label, value] of rows) {
+    fragment.append(text('dt', 'diag__label', label), text('dd', 'diag__value', value));
+  }
+  body.replaceChildren(fragment);
 }
 
 function element<K extends keyof HTMLElementTagNameMap>(tag: K, className: string): HTMLElementTagNameMap[K] {
@@ -230,6 +306,6 @@ function legendItem(swatchClass: string, label: string): HTMLElement {
   const item = element('span', 'legend__item');
   const swatch = element('span', `legend__swatch ${swatchClass}`);
   swatch.setAttribute('aria-hidden', 'true');
-  item.append(swatch, document.createTextNode(label));
+  item.append(swatch, text('span', 'legend__text', label));
   return item;
 }
