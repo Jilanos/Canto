@@ -35,6 +35,8 @@ export interface AppView {
   canvas: HTMLCanvasElement;
   pianoRoot: HTMLElement;
 
+  deviceSelect: HTMLSelectElement;
+  deviceControl: HTMLElement;
   instrumentSelect: HTMLSelectElement;
   volumeInput: HTMLInputElement;
   muteButton: HTMLButtonElement;
@@ -131,6 +133,15 @@ export function renderApp(root: HTMLElement): AppView {
   // Controls ---------------------------------------------------------------
   const controls = element('section', 'controls');
 
+  // The input picker is the only lever a page has against filtering applied
+  // upstream of the browser, so it stays next to the other audio controls rather
+  // than hiding in a panel. It is populated once permission reveals device labels.
+  const deviceSelect = document.createElement('select');
+  deviceSelect.className = 'control__input';
+  deviceSelect.id = 'input-device';
+  const deviceControl = labelled('input-device', t('mic.device'), deviceSelect);
+  deviceControl.hidden = true;
+
   const instrumentSelect = document.createElement('select');
   instrumentSelect.className = 'control__input';
   instrumentSelect.id = 'instrument';
@@ -163,6 +174,7 @@ export function renderApp(root: HTMLElement): AppView {
   octaveGroup.append(octaveDownButton, rangeReadout, octaveUpButton);
 
   controls.append(
+    deviceControl,
     labelled('instrument', t('piano.instrument'), instrumentSelect),
     labelled('volume', t('piano.volume'), volumeInput),
     labelledGroup(t('piano.range'), octaveGroup),
@@ -227,6 +239,8 @@ export function renderApp(root: HTMLElement): AppView {
     liveRegion,
     canvas,
     pianoRoot,
+    deviceSelect,
+    deviceControl,
     instrumentSelect,
     volumeInput,
     muteButton,

@@ -113,6 +113,16 @@ describe('app shell', () => {
     expect(view.diagnosticsBody.querySelectorAll('dt')).toHaveLength(1);
   });
 
+  it('hides the input picker until several devices are known (item_007)', () => {
+    const view = renderApp(root);
+    expect(view.deviceControl.hidden).toBe(true);
+    expect(view.deviceSelect.options).toHaveLength(0);
+    // It lives with the audio controls, not in a panel: it is the only lever the
+    // page has against filtering applied upstream of the browser.
+    expect(view.controls.contains(view.deviceSelect)).toBe(true);
+    expect(root.querySelector('label[for="input-device"]')?.textContent).toBe(CATALOGUE['mic.device']);
+  });
+
   it('keeps the microphone control, the note and the level on one status bar', () => {
     const view = renderApp(root);
     expect(view.statusBar.contains(view.micButton)).toBe(true);

@@ -128,6 +128,7 @@ No tutorial, no exercise, no score — just the loop.
 | **Stop microphone** | Ends capture and releases the media tracks |
 | **Help and privacy** | Keyboard map, headphone advice and the privacy statement |
 | **Diagnostics** | Live capture values — see below |
+| **Microphone** | Input device picker, shown when several are available |
 | `Esc` | Closes an open panel |
 
 ### States you may see
@@ -140,6 +141,7 @@ No tutorial, no exercise, no score — just the loop.
 | *Microphone access was refused* | Re-allow it in the browser's site settings |
 | *No microphone was found* | No input device available |
 | *The microphone input stopped* | The device was disconnected or taken over |
+| *Your input stopped sending audio mid-note* | The capture chain muted a live note — see below |
 
 ### Diagnostics panel
 
@@ -156,6 +158,24 @@ constraints once if the browser ignored them. If the panel still says *Still on*
 a dropout on a held note comes from the capture chain, not from Canto's thresholds.
 
 Nothing in the panel is recorded or sent anywhere.
+
+### When a held note gets cut
+
+On some desktop setups a sustained note is cut after a few seconds, the moment the
+voice settles. The signature is unmistakable in the diagnostics: a healthy RMS
+around 0.05–0.1, then **exactly `0.0000`**.
+
+A real microphone in a real room never returns a digital zero — room tone, breath
+and preamp noise always leave a residue. So when Canto sees that cliff it stops
+claiming "no sound detected", says the input was muted mid-note, and counts the
+occurrences under *Capture cuts detected*.
+
+When the browser also reports voice processing as *Off, as requested*, the filtering
+sits **below** the browser: an operating-system enhancement, an audio driver, or a
+virtual noise-suppression device. Those all treat a steady sung vowel as stationary
+noise. The page has one lever against it — the **Microphone** picker in the controls,
+which appears once more than one input is available. Otherwise, disable the audio
+enhancements for that device in the system settings.
 
 ### Speakers vs headphones
 

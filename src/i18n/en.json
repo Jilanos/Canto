@@ -22,7 +22,10 @@
     "errorUnavailable": "No microphone was found. Connect an input device and try again.",
     "errorInterrupted": "The microphone input stopped. Check the device, then enable it again.",
     "errorUnsupported": "This browser cannot capture audio here. Use HTTPS, or localhost in development.",
-    "headphonesHint": "Using speakers? The instrument can leak into the microphone. Headphones give a cleaner reading."
+    "headphonesHint": "Using speakers? The instrument can leak into the microphone. Headphones give a cleaner reading.",
+    "device": "Microphone",
+    "deviceDefault": "Default input",
+    "statusGated": "Your input stopped sending audio mid-note. This is filtering outside the browser: try another microphone below, or turn off audio enhancements for this device in your system settings."
   },
   "pitch": {
     "label": "Detected note",
@@ -85,6 +88,7 @@
     "thresholds": "Thresholds (attack / release)",
     "idle": "Microphone off",
     "yes": "Yes",
-    "no": "No"
+    "no": "No",
+    "gates": "Capture cuts detected"
   }
 }

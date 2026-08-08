@@ -8,7 +8,13 @@
  */
 
 import { InstrumentEngine, isInstrumentId } from './audio/instruments';
-import { MicrophoneError, MicrophonePipeline, type CaptureReport, type MicrophoneFailure } from './audio/microphone';
+import {
+  MicrophoneError,
+  MicrophonePipeline,
+  listInputDevices,
+  type CaptureReport,
+  type MicrophoneFailure,
+} from './audio/microphone';
 import { t, type TranslationKey } from './i18n';
 import { IN_TUNE_CENTS, noteLabel } from './music/notes';
 import { availableBottomNotes, clampBottomMidi, createKeyboardLayout } from './music/layout';
@@ -49,6 +55,8 @@ export class CantoApp {
   private lastSample: PitchSample | null = null;
   private captureReport: CaptureReport | null = null;
   private diagnosticsOpen = false;
+  /** Sticky once a capture cut is seen, so the explanation survives the next frame. */
+  private captureGated = false;
   private diagnosticsTimer = 0;
   private layoutFrame = 0;
   private frameCount = 0;
@@ -86,6 +94,7 @@ export class CantoApp {
         this.captureReport = report;
         this.refreshDiagnostics();
       },
+      onCaptureGate: () => this.handleCaptureGate(),
     });
 
     this.bindControls();
@@ -165,10 +174,12 @@ export class CantoApp {
     }
     try {
       await this.engine.resume();
-      await this.microphone.start();
+      await this.microphone.start(this.view.deviceSelect.value || undefined);
       this.view.micButton.textContent = t('mic.stop');
       this.view.micButton.setAttribute('aria-pressed', 'true');
       this.setStatus('mic.statusListening');
+      this.captureGated = false;
+      void this.populateInputDevices();
       this.frameCount = 0;
       this.frameWindowStart = performance.now();
       this.renderer.start();
@@ -192,6 +203,7 @@ export class CantoApp {
     this.lastAnnouncedNote = null;
     this.lastSample = null;
     this.frameRate = 0;
+    this.captureGated = false;
     this.refreshDiagnostics();
   }
 
@@ -210,9 +222,65 @@ export class CantoApp {
     this.buffer.add(sample);
     this.lastSample = sample;
     this.updateLevel(sample.level);
+    // While the capture chain is muting a live note, "No sound detected" would be a
+    // lie: the singer is singing. Keep the explanation until sound returns.
+    if (this.captureGated && sample.state === 'silence') {
+      this.setNoteReadout(sample);
+      this.countFrame();
+      return;
+    }
+    this.captureGated = false;
     this.setStatus(MIC_STATUS_KEYS[sample.state]);
     this.setNoteReadout(sample);
     this.countFrame();
+  }
+
+  /**
+   * The capture chain cut a live note (item_007). The browser reports its own voice
+   * processing as disabled in this case, so the filtering sits below it: an OS
+   * enhancement, a driver, or a virtual noise-suppression device. Name it and point
+   * at the one lever this page has, choosing another input.
+   */
+  private handleCaptureGate(): void {
+    this.captureGated = true;
+    this.view.micStatus.textContent = t('mic.statusGated');
+    this.view.micStatus.classList.add('mic__status--error');
+    this.refreshDiagnostics();
+  }
+
+  /** Fills the input picker; labels only exist once permission has been granted. */
+  private async populateInputDevices(): Promise<void> {
+    const devices = await listInputDevices();
+    if (devices.length <= 1) return;
+
+    const current = this.view.deviceSelect.value;
+    const options = devices.map((device, index) => {
+      const option = document.createElement('option');
+      option.value = device.deviceId;
+      option.textContent = device.label || t('mic.deviceDefault') + ` ${index + 1}`;
+      return option;
+    });
+    this.view.deviceSelect.replaceChildren(...options);
+    if (current && devices.some((device) => device.deviceId === current)) this.view.deviceSelect.value = current;
+    this.view.deviceControl.hidden = false;
+    this.scheduleHeightBudget();
+  }
+
+  /** Switching input restarts the capture; the choice is not persisted. */
+  private async switchInputDevice(): Promise<void> {
+    if (!this.microphone.running) return;
+    const deviceId = this.view.deviceSelect.value;
+    this.microphone.stop();
+    this.buffer.clear();
+    this.captureGated = false;
+    try {
+      await this.microphone.start(deviceId);
+      this.setStatus('mic.statusListening');
+    } catch (error) {
+      this.handleMicrophoneFailure(
+        error instanceof MicrophoneError ? error : new MicrophoneError('unavailable', String(error)),
+      );
+    }
   }
 
   /** Rolling analysis frame rate, reported by the diagnostics panel. */
@@ -311,6 +379,7 @@ export class CantoApp {
         report ? (report.processingStillOn ? t('diag.processingOn') : t('diag.processingOff')) : '—',
       ],
       [t('diag.reapplied'), report?.reapplied ? t('diag.yes') : t('diag.no')],
+      [t('diag.gates'), String(this.microphone.captureGateCount)],
       [
         t('diag.thresholds'),
         `RMS ${thresholds.attackRms} / ${thresholds.releaseRms} · clarity ${thresholds.attackClarity} / ${thresholds.releaseClarity} · hold ${thresholds.holdMs} ms`,
@@ -333,6 +402,8 @@ export class CantoApp {
     this.view.diagnosticsButton.addEventListener('click', () => this.toggleDiagnostics());
     this.view.helpCloseButton.addEventListener('click', () => this.closePanels());
     this.view.diagnosticsCloseButton.addEventListener('click', () => this.closePanels());
+
+    this.view.deviceSelect.addEventListener('change', () => void this.switchInputDevice());
 
     this.view.instrumentSelect.addEventListener('change', () => {
       const value = this.view.instrumentSelect.value;

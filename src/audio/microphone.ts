@@ -14,6 +14,7 @@
 
 import { PitchTracker, type PitchSample, type TrackerOptions } from '../pitch/tracker';
 import { DEFAULT_PITCH_OPTIONS, estimatePitch } from '../pitch/yin';
+import { CaptureGateDetector } from './capture-gate';
 
 /** ~43 ms at 48 kHz: long enough for C2, short enough for the latency budget. */
 export const ANALYSIS_WINDOW = 2048;
@@ -62,6 +63,30 @@ export interface MicrophoneHandlers {
   onSample(sample: PitchSample): void;
   onFailure(error: MicrophoneError): void;
   onCaptureReport?(report: CaptureReport): void;
+  /** Fired once per gate when the capture chain mutes a live note (item_007). */
+  onCaptureGate?(): void;
+}
+
+/** An audio input the user can pick. Labels only exist after permission is granted. */
+export interface InputDevice {
+  deviceId: string;
+  label: string;
+}
+
+/**
+ * Lists audio inputs. Returns an empty list rather than throwing: the picker is an
+ * escape hatch, never a prerequisite for practising.
+ */
+export async function listInputDevices(): Promise<InputDevice[]> {
+  if (!navigator.mediaDevices?.enumerateDevices) return [];
+  try {
+    const devices = await navigator.mediaDevices.enumerateDevices();
+    return devices
+      .filter((device) => device.kind === 'audioinput')
+      .map((device) => ({ deviceId: device.deviceId, label: device.label }));
+  } catch {
+    return [];
+  }
 }
 
 export interface MicrophoneOptions {
@@ -81,6 +106,7 @@ export class MicrophonePipeline {
   private frame = 0;
   private trackEndedHandler: (() => void) | null = null;
   private report: CaptureReport | null = null;
+  private readonly gateDetector = new CaptureGateDetector();
 
   constructor(context: AudioContext, handlers: MicrophoneHandlers, options: MicrophoneOptions = {}) {
     this.context = context;
@@ -101,11 +127,16 @@ export class MicrophonePipeline {
     return this.tracker.thresholds;
   }
 
+  /** How many times the capture chain muted a live note this session. */
+  get captureGateCount(): number {
+    return this.gateDetector.gateCount;
+  }
+
   /**
    * Must be called from a user gesture, after the privacy note has been shown
    * (item_003 AC1). Throws a `MicrophoneError` the UI can map to a recovery hint.
    */
-  async start(): Promise<void> {
+  async start(deviceId?: string): Promise<void> {
     if (this.stream) return;
     if (!navigator.mediaDevices?.getUserMedia) {
       throw new MicrophoneError('unsupported', 'getUserMedia is unavailable in this browser context');
@@ -113,7 +144,11 @@ export class MicrophonePipeline {
 
     let stream: MediaStream;
     try {
-      stream = await navigator.mediaDevices.getUserMedia({ audio: { ...RAW_AUDIO_CONSTRAINTS }, video: false });
+      const audio: MediaTrackConstraints = { ...RAW_AUDIO_CONSTRAINTS };
+      // `exact` so a gated device is never silently swapped for another one: the
+      // point of choosing an input is to know which one is being used.
+      if (deviceId) audio.deviceId = { exact: deviceId };
+      stream = await navigator.mediaDevices.getUserMedia({ audio, video: false });
     } catch (error) {
       throw new MicrophoneError(classify(error), error instanceof Error ? error.message : undefined);
     }
@@ -122,6 +157,7 @@ export class MicrophonePipeline {
 
     this.stream = stream;
     this.tracker.reset();
+    this.gateDetector.reset();
     this.report = await this.inspectCapture(stream);
     this.handlers.onCaptureReport?.(this.report);
 
@@ -219,7 +255,9 @@ export class MicrophonePipeline {
 
     analyser.getFloatTimeDomainData(this.buffer);
     const estimate = estimatePitch(this.buffer, { ...DEFAULT_PITCH_OPTIONS, sampleRate: this.context.sampleRate });
-    this.handlers.onSample(this.tracker.push(estimate, this.context.currentTime * 1000));
+    const timestamp = this.context.currentTime * 1000;
+    if (this.gateDetector.push(estimate?.rms ?? 0, timestamp)) this.handlers.onCaptureGate?.();
+    this.handlers.onSample(this.tracker.push(estimate, timestamp));
 
     this.frame = requestAnimationFrame(this.tick);
   };

@@ -97,7 +97,13 @@ Then sing the same notes and confirm the reading is stable within a semitone.
 4. Stop singing: the state must return to `silence` immediately, with no lingering
    note. *Held frame* may flash `Yes` for a fraction of a second — that is the grace
    period — but must not stay on.
-5. Record the observed values per browser in the table below.
+5. If the note is cut while you are still singing and *RMS* reads `0.0000`, the app
+   now says so explicitly instead of claiming silence, and *Capture cuts detected*
+   counts the occurrences. A digital zero cannot come from a live microphone in a
+   real room, so the filtering is outside the browser: try another entry in the
+   **Microphone** picker, or disable the audio enhancements of that device in the
+   operating system.
+6. Record the observed values per browser in the table below.
 
 ### 2.5 Fluidity and layout (`item_001` AC3; `item_004` AC5, AC7)
 
