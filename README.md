@@ -3,7 +3,7 @@
 **Local-first practice tool for singing in tune.** Play a reference note on a
 visual piano, sing, and watch your pitch land on the same note columns as the keys.
 
-Everything — instruments, microphone analysis, rendering — runs in the browser.
+Everything (instruments, microphone analysis, rendering) runs in the browser.
 No account, no backend, no audio ever leaves the device.
 
 ```
@@ -18,12 +18,12 @@ No account, no backend, no audio ever leaves the device.
      C3                     C4                     C5
 ```
 
-**Live at [canto.paulmondou.fr](https://canto.paulmondou.fr)** — v1.0.0.
+**Live at [canto.paulmondou.fr](https://canto.paulmondou.fr)**, v1.1.0.
 
 Status: **MVP free-practice mode**, in production and covered by automated tests.
 Validation on the full target-device matrix is still outstanding (see
-[Validation](#validation)). Workflow docs live under `logics/` (in French) —
-start with `logics/INDEX.md`.
+[Validation](#validation)). Workflow docs live under `logics/` (in French).
+Start with `logics/INDEX.md`.
 
 ---
 
@@ -111,7 +111,7 @@ never serves stale modules. To test offline behaviour, use
 3. Sing. Your pitch appears above the keys and rises as it ages.
 4. Adjust until the trace sits inside the note's in-tune band.
 
-No tutorial, no exercise, no score — just the loop.
+No tutorial, no exercise, no score, just the loop.
 
 ### Controls
 
@@ -126,7 +126,7 @@ No tutorial, no exercise, no score — just the loop.
 | **Stop all sound** | Releases every voice immediately |
 | **Stop microphone** | Ends capture and releases the media tracks |
 | **Help and privacy** | Keyboard map, headphone advice and the privacy statement |
-| **Diagnostics** | Live capture values — see below |
+| **Diagnostics** | Live capture values: see below |
 | **Microphone** | Input device picker, shown when several are available |
 | `Esc` | Closes an open panel |
 
@@ -136,18 +136,18 @@ No tutorial, no exercise, no score — just the loop.
 | --- | --- |
 | *No sound detected* | Below the silence floor |
 | *Too quiet* | Audible but too weak to trust |
-| *Pitch unclear* | No stable fundamental — try one steady vowel |
+| *Pitch unclear* | No stable fundamental: try one steady vowel |
 | *Microphone access was refused* | Re-allow it in the browser's site settings |
 | *No microphone was found* | No input device available |
 | *The microphone input stopped* | The device was disconnected or taken over |
-| *Your input stopped sending audio mid-note* | The capture chain muted a live note — see below |
+| *Your input stopped sending audio mid-note* | The capture chain muted a live note: see below |
 
 ### Diagnostics panel
 
 Open **Diagnostics** in the header to see what the audio pipeline is really doing:
 state, detected note, raw RMS, level, clarity, whether the current frame is being
-held through the grace period, analysis frame rate, sample rate, input device, and —
-the useful one — whether the browser actually honoured the request to turn echo
+held through the grace period, analysis frame rate, sample rate, input device, and
+the useful one: whether the browser actually honoured the request to turn echo
 cancellation, noise suppression and gain control **off**.
 
 That last row matters. Voice processing fights pitch detection: noise suppression
@@ -164,7 +164,7 @@ On some desktop setups a sustained note is cut after a few seconds, the moment t
 voice settles. The signature is unmistakable in the diagnostics: a healthy RMS
 around 0.05–0.1, then **exactly `0.0000`**.
 
-A real microphone in a real room never returns a digital zero — room tone, breath
+A real microphone in a real room never returns a digital zero, room tone, breath
 and preamp noise always leave a residue. So when Canto sees that cliff it stops
 claiming "no sound detected", says the input was muted mid-note, and counts the
 occurrences under *Capture cuts detected*.
@@ -172,7 +172,7 @@ occurrences under *Capture cuts detected*.
 When the browser also reports voice processing as *Off, as requested*, the filtering
 sits **below** the browser: an operating-system enhancement, an audio driver, or a
 virtual noise-suppression device. Those all treat a steady sung vowel as stationary
-noise. The page has one lever against it — the **Microphone** picker in the controls,
+noise. The page has one lever against it, the **Microphone** picker in the controls,
 which appears once more than one input is available. Otherwise, disable the audio
 enhancements for that device in the system settings.
 
@@ -192,7 +192,7 @@ reading.
 - `localStorage` holds exactly four values under `canto.preferences.v1`:
   instrument, volume, mute, visible octave. The persistence layer drops anything
   else, and a test asserts that allow-list.
-- No analytics, no fonts, no CDN, no third-party request of any kind — the
+- No analytics, no fonts, no CDN, no third-party request of any kind, the
   service worker precaches the app and the app makes no network calls at runtime.
 
 ---
@@ -214,7 +214,7 @@ Four boundaries are kept deliberately clean so a future song mode can reuse them
 | Module | Responsibility |
 | --- | --- |
 | `src/music/notes.ts` | Note ↔ frequency ↔ cents primitives, A4 = 440 Hz, range C2–C6 |
-| `src/music/layout.ts` | Horizontal geometry — the single source of where a pitch sits |
+| `src/music/layout.ts` | Horizontal geometry: the single source of where a pitch sits |
 | `src/pitch/yin.ts` | Pure fundamental-frequency estimation with a clarity score |
 | `src/pitch/tracker.ts` | Validity decision and the normalised sample stream |
 | `src/audio/instruments.ts` | Polyphonic synthesis of the three timbres |
@@ -250,7 +250,7 @@ Vite + strict TypeScript, no UI framework (one screen does not need a reactive
 renderer), Canvas 2D for the trace, Web Audio for both synthesis and analysis,
 Vitest + jsdom for tests. The service worker is hand-written and its precache
 list is injected from the real bundle at build time by a plugin in
-`vite.config.ts` — a missing injection fails the build rather than shipping a
+`vite.config.ts`, a missing injection fails the build rather than shipping a
 broken offline mode.
 
 ---
@@ -286,7 +286,7 @@ broken offline mode.
 
 All visible text comes from `src/i18n/en.json`, a nested catalogue declared in
 `logics/i18n/contract.json`. Add the key there, use it through `t('group.key')`,
-and run `npm test` — a test fails on both missing and unused keys. Placeholders
+and run `npm test`, a test fails on both missing and unused keys. Placeholders
 use `{name}` syntax. Adding a locale means adding a catalogue file, not touching
 the views.
 
@@ -295,7 +295,7 @@ the views.
 ## Testing
 
 ```bash
-npm test          # 91 tests across 9 files
+npm test          # 123 tests across 11 files
 ```
 
 | Area | File | What it pins down |
@@ -326,15 +326,15 @@ measurement against the 150 ms target, fluidity, orientation, speaker vs
 headphone behaviour, and accessibility.
 
 **Current state:** section 1 (automated) passes. Sections 2.1–2.8 have not been
-run on Chrome Android, Firefox desktop or Firefox Android yet, and the app has
-not been published to the production domain.
+run on Chrome Android, Firefox desktop or Firefox Android yet. The app is
+published at canto.paulmondou.fr.
 
 ---
 
 ## Deployment
 
 `npm run build` produces a purely static `dist/` intended for the **root** of
-`https://canto.paulmondou.fr` — `base: '/'` in `vite.config.ts`.
+`https://canto.paulmondou.fr`, `base: '/'` in `vite.config.ts`.
 
 In production that bundle ships inside a small image: `Dockerfile` builds it and
 serves it with an unprivileged nginx configured by `nginx.conf`. The container runs
@@ -367,7 +367,7 @@ To run the production image locally:
 docker build --build-arg CANTO_VERSION=v0.0.0-local -t canto:local .
 docker run --rm -p 8099:8080 --read-only \
   --tmpfs /tmp --tmpfs /var/cache/nginx --tmpfs /var/run canto:local
-# http://localhost:8099 — note the microphone needs HTTPS or localhost
+# http://localhost:8099, note the microphone needs HTTPS or localhost
 ```
 
 ---
@@ -381,19 +381,19 @@ git tag v1.2.3
 git push origin v1.2.3
 ```
 
-What that triggers, in order — any failing step stops the release:
+What that triggers, in order, any failing step stops the release:
 
-1. **Validate** — the tag must match `vX.Y.Z` exactly, and its commit must already
+1. **Validate**, the tag must match `vX.Y.Z` exactly, and its commit must already
    be an ancestor of `origin/main`. Then `npm run build` (icons, typecheck, bundle)
    and `npm test`.
-2. **Publish** — the image is built with `CANTO_VERSION` baked in and pushed to
+2. **Publish**, the image is built with `CANTO_VERSION` baked in and pushed to
    `ghcr.io/jilanos/canto`, tagged with both the release tag and the full commit
    SHA, with provenance and an SBOM.
-3. **Deploy** — over SSH, the shared `scripts/deploy-image.sh` on the VPS resolves
+3. **Deploy**, over SSH, the shared `scripts/deploy-image.sh` on the VPS resolves
    the image to an immutable digest, swaps the `canto` service, and waits for
    `https://canto.paulmondou.fr/health` to answer **with this exact version**.
    If it does not, the previous image is restored and the workflow fails.
-4. **Release** — a GitHub Release is created with generated notes, then a job
+4. **Release**, a GitHub Release is created with generated notes, then a job
    summary records tag, commit, image, service, health URL and each step's result.
 
 ### Rollback
@@ -412,7 +412,7 @@ cd /home/deploy/paulmondou-infra
 
 | What | Value |
 | --- | --- |
-| Environment | `production` — carries the SSH secrets, and can require manual approval |
+| Environment | `production`: carries the SSH secrets, and can require manual approval |
 | Secret `VPS_HOST` | VPS hostname |
 | Secret `VPS_USER` | Deploy user |
 | Secret `VPS_SSH_KEY` | Private key for that user |
@@ -437,8 +437,8 @@ running container.
 | Firefox desktop | Required by the MVP; device validation pending |
 | Firefox Android | Required by the MVP; device validation pending |
 
-Anything else is expected to work — the app uses only Web Audio, Canvas 2D,
-pointer events and a service worker — but is not part of the validated matrix.
+Anything else is expected to work, the app uses only Web Audio, Canvas 2D,
+pointer events and a service worker, but is not part of the validated matrix.
 
 ---
 
@@ -453,7 +453,7 @@ Deliberately excluded from this MVP:
 - Accounts, backends, cloud sync, analytics
 
 The architecture keeps the musical-time, pitch, rendering and transport
-primitives separate so a song mode can be built on them later — but none of it
+primitives separate so a song mode can be built on them later, but none of it
 is implemented here.
 
 ---
@@ -463,7 +463,7 @@ is implemented here.
 The emblem lives at `public/brand/canto-emblem.svg` and is used directly as the
 SVG favicon and in the header. The manifest needs raster icons, so
 `npm run brand` rasterises it into 192, 512, maskable 512 and an Apple touch icon,
-composited on the app background — a transparent PNG would be placed on whatever
+composited on the app background, a transparent PNG would be placed on whatever
 the platform picks, and the gold rim disappears on white.
 
 Those PNGs are **committed**, not generated during the build, so neither CI nor the
@@ -479,7 +479,7 @@ result whenever the emblem changes.
   timbres are close cousins rather than recorded instruments. The "no runtime
   download" constraint holds either way. Replacing the synthesis with light
   samples is follow-up work that does not change the architecture contract.
-- **Device validation is outstanding** — see [Validation](#validation).
+- **Device validation is outstanding**, see [Validation](#validation).
 - **Pitch analysis runs on the main thread.** Measurements put a frame far inside
   the latency budget, so moving it to an AudioWorklet is not justified yet; the
   stream contract already allows it without UI changes.
